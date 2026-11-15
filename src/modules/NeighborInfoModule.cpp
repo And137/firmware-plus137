@@ -128,8 +128,13 @@ Will be used for broadcast.
 */
 int32_t NeighborInfoModule::runOnce()
 {
+    // hydra: NEIGHBORINFO_ALLOW_DEFAULT_CHANNEL=1 lets transmit_over_lora work on the default channel too
+#ifndef NEIGHBORINFO_ALLOW_DEFAULT_CHANNEL
+#define NEIGHBORINFO_ALLOW_DEFAULT_CHANNEL 0
+#endif
     if (moduleConfig.neighbor_info.transmit_over_lora &&
-        (!channels.isDefaultChannel(channels.getPrimaryIndex()) || !RadioInterface::uses_default_frequency_slot) &&
+        (NEIGHBORINFO_ALLOW_DEFAULT_CHANNEL || !channels.isDefaultChannel(channels.getPrimaryIndex()) ||
+         !RadioInterface::uses_default_frequency_slot) &&
         airTime->isTxAllowedChannelUtil(true) && airTime->isTxAllowedAirUtil()) {
         sendNeighborInfo(NODENUM_BROADCAST, false);
     } else {

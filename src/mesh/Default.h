@@ -14,7 +14,11 @@
 #define TEN_SECONDS_MS 10 * 1000
 #define MAX_INTERVAL INT32_MAX // FIXME: INT32_MAX to avoid overflow issues with Apple clients but should be UINT32_MAX
 
-#define min_default_telemetry_interval_secs IF_ROUTER(ONE_DAY / 2, 30 * 60)
+// hydra: build-time override of the router-role telemetry floor (upstream 12 h)
+#ifndef ROUTER_MIN_TELEMETRY_INTERVAL_SECS
+#define ROUTER_MIN_TELEMETRY_INTERVAL_SECS (ONE_DAY / 2)
+#endif
+#define min_default_telemetry_interval_secs IF_ROUTER(ROUTER_MIN_TELEMETRY_INTERVAL_SECS, 30 * 60)
 #define default_gps_update_interval IF_ROUTER(ONE_DAY, 2 * 60)
 #define default_telemetry_broadcast_interval_secs IF_ROUTER(ONE_DAY / 2, 60 * 60)
 #define default_broadcast_interval_secs IF_ROUTER(ONE_DAY / 2, 60 * 60)

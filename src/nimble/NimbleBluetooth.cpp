@@ -279,7 +279,9 @@ class BluetoothPhoneAPI : public PhoneAPI, public concurrency::OSThread
         }
 
         // the run is triggered via NimbleBluetoothToRadioCallback and NimbleBluetoothFromRadioCallback
-        return INT32_MAX;
+        // hydra: onDisconnect may have set pendingStartAdvertising (and setIntervalFromNow(0)) while this
+        // run was in progress; returning INT32_MAX would overwrite that and leave BLE never advertising.
+        return pendingStartAdvertising ? 0 : INT32_MAX;
     }
 
     virtual void onConfigStart() override

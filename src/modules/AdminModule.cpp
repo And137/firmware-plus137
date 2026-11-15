@@ -487,11 +487,12 @@ bool AdminModule::handleReceivedProtobuf(const meshtastic_MeshPacket &mp, meshta
         break;
     }
     case meshtastic_AdminMessage_commit_edit_settings_tag: {
-        disableBluetooth();
         LOG_INFO("Commit settings edit transaction");
         hasOpenEditTransaction = false;
         deferredEditSegments = 0;
         saveChanges(SEGMENT_CONFIG | SEGMENT_MODULECONFIG | SEGMENT_DEVICESTATE | SEGMENT_CHANNELS | SEGMENT_NODEDATABASE);
+        // hydra: BLE teardown can panic in NimBLE (eventq race); save first so a crash cannot lose the settings
+        disableBluetooth();
         flushChannelWarnings(); // one coalesced message for everything edited in this transaction
         break;
     }
@@ -1247,11 +1248,13 @@ void AdminModule::handleSetConfig(const meshtastic_Config &c, bool fromOthers)
         // NOOP! This is handled by handleStoreDeviceUIConfig
         break;
     }
-    if (requiresReboot && !hasOpenEditTransaction) {
-        disableBluetooth();
-    } // end of switch case which_payload_variant
+    // end of switch case which_payload_variant
 
     saveChanges(changes, requiresReboot);
+    // hydra: BLE teardown can panic in NimBLE (eventq race); save first so a crash cannot lose the settings
+    if (requiresReboot && !hasOpenEditTransaction) {
+        disableBluetooth();
+    }
     if (loraPresetWarnPending)
         warnOnLoraPresetChange(pendingOldLora, pendingNewLora);
     // Inside an edit transaction the queued warnings are flushed once at commit; otherwise emit now.
@@ -1262,13 +1265,15 @@ void AdminModule::handleSetConfig(const meshtastic_Config &c, bool fromOthers)
 bool AdminModule::handleSetModuleConfig(const meshtastic_ModuleConfig &c)
 {
     bool shouldReboot = true;
+    // hydra: BLE goes down after saveChanges(), not before: its teardown can panic in NimBLE and lose the settings
+    bool disableBleAfterSave = false;
     // Skip the variants that must not lose BLE here: MQTT and Serial validate first and disable it
     // themselves, and statusmessage/mesh_beacon never reboot, so a disable would strand BLE until the
     // next PowerFSM transition. Everything else reboots, so take BLE down before the phone interferes.
     if (!hasOpenEditTransaction &&
         !IS_ONE_OF(c.which_payload_variant, meshtastic_ModuleConfig_mqtt_tag, meshtastic_ModuleConfig_serial_tag,
                    meshtastic_ModuleConfig_statusmessage_tag, meshtastic_ModuleConfig_mesh_beacon_tag)) {
-        disableBluetooth();
+        disableBleAfterSave = true;
     }
 
     switch (c.which_payload_variant) {
@@ -1284,7 +1289,7 @@ bool AdminModule::handleSetModuleConfig(const meshtastic_ModuleConfig &c)
         // Disable Bluetooth to prevent interference during MQTT configuration, except inside an edit
         // transaction: saveChanges() defers the reboot there, so nothing would bring BLE back.
         if (!hasOpenEditTransaction)
-            disableBluetooth();
+            disableBleAfterSave = true;
         moduleConfig.has_mqtt = true;
         {
             char prevPass[sizeof(moduleConfig.mqtt.password)];
@@ -1304,7 +1309,7 @@ bool AdminModule::handleSetModuleConfig(const meshtastic_ModuleConfig &c)
         }
         // Same transaction caveat as MQTT above: a deferred reboot would leave BLE down with no restore.
         if (!hasOpenEditTransaction)
-            disableBluetooth(); // Disable Bluetooth to prevent interference during Serial configuration
+            disableBleAfterSave = true; // Disable Bluetooth to prevent interference during Serial configuration
         moduleConfig.has_serial = true;
         moduleConfig.serial = c.payload_variant.serial;
         break;
@@ -1414,6 +1419,9 @@ bool AdminModule::handleSetModuleConfig(const meshtastic_ModuleConfig &c)
 #endif
     }
     saveChanges(SEGMENT_MODULECONFIG, shouldReboot);
+    // hydra: only when a reboot follows; NodeMod and other no-reboot variants would otherwise strand BLE off
+    if (disableBleAfterSave && shouldReboot)
+        disableBluetooth();
     return true;
 }
 

@@ -60,6 +60,8 @@ CMakeLists.txt
 # PYTHONPATH used by the Nix shell
 .python3
 .claude/scheduled_tasks.lock
+# hydra: local Claude Code settings stay out of the repo
+.claude/
 userPrefs.jsonc.mcp-session-bak
 
 # Fake-NodeDB fixture pipeline (bin/regen-fake-nodedbs.sh)

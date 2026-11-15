@@ -1068,7 +1068,12 @@ void NodeDB::installDefaultConfig(bool preserveKey = false)
 
 #ifdef USERPREFS_CONFIG_DEVICE_ROLE
     // Restrict ROUTER*, LOST AND FOUND roles for security reasons
-    if (IS_ONE_OF(USERPREFS_CONFIG_DEVICE_ROLE, meshtastic_Config_DeviceConfig_Role_ROUTER,
+    // hydra: USERPREFS_ALLOW_ROUTER_ROLES lets a build that knows it is infrastructure ship a router role
+#ifndef USERPREFS_ALLOW_ROUTER_ROLES
+#define USERPREFS_ALLOW_ROUTER_ROLES 0
+#endif
+    if (!USERPREFS_ALLOW_ROUTER_ROLES &&
+        IS_ONE_OF(USERPREFS_CONFIG_DEVICE_ROLE, meshtastic_Config_DeviceConfig_Role_ROUTER,
                   meshtastic_Config_DeviceConfig_Role_ROUTER_LATE, meshtastic_Config_DeviceConfig_Role_LOST_AND_FOUND)) {
         LOG_WARN("ROUTER roles restricted, fall back to CLIENT");
         config.device.role = meshtastic_Config_DeviceConfig_Role_CLIENT;

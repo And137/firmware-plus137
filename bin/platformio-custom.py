@@ -347,8 +347,18 @@ def manifest_write(files, env, ram_bytes=None, flash_bytes=None):
 Import("projenv")
 
 prefsLoc = projenv["PROJECT_DIR"] + "/version.properties"
-# fw+: the PSRAM variant gets a "p" after the build number (v30p); the non-PSRAM one stays v30
-verObj = readProps(prefsLoc, "p" if env.get("PIOENV", "").endswith("_psram") else "")
+
+# hydra: version suffix from the env's build_flags: "P" = E22P module (USE_EBYTE_E22P),
+# "R" = PSRAM (BOARD_HAS_PSRAM), both = "PR". Plain Hydra gets none ("2.8.3.39").
+def hydra_version_suffix():
+    flags = env.GetProjectOption("build_flags", [])
+    flags = flags if isinstance(flags, str) else " ".join(flags)
+    e22p = "USE_EBYTE_E22P" in flags
+    psram = "BOARD_HAS_PSRAM" in flags
+    return ("P" if e22p else "") + ("R" if psram else "")
+
+
+verObj = readProps(prefsLoc, hydra_version_suffix() if env.get("PIOENV", "").lower().startswith("hydra") else "")
 print(f"Using meshtastic platformio-custom.py, firmware version {verObj['long']} on {env.get('PIOENV')}")
 
 # get repository owner if git is installed
