@@ -18,6 +18,7 @@
 #include "Router.h"
 #include "SPILock.h"
 #include "SafeFile.h"
+#include "Throttle.h"
 #include "TransmitHistory.h"
 #include "TypeConversions.h"
 #include "UptimeClock.h"
@@ -3319,6 +3320,24 @@ bool NodeDB::saveNodeDatabaseToDisk()
     }
 #endif
 
+    // hydra: hold routine NodeDB saves while a phone is connected over BLE: fewer flash writes during
+    // a connection (the Bluetooth controller interrupt competes with every flash write) and less flash
+    // wear. The main loop's saveNodeDatabaseIfDirty() writes them once the phone disconnects, and
+    // onReboot() runs after BLE is torn down. HYDRA_NODEDB_DEFER_WHILE_BLE is the longest hold in ms,
+    // so a phone left connected for hours still gets a periodic save.
+#if defined(HYDRA_NODEDB_DEFER_WHILE_BLE) && defined(ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32S2) &&                       !MESHTASTIC_EXCLUDE_BLUETOOTH
+    if (nimbleBluetooth && nimbleBluetooth->isConnected()) {
+        nodeDatabaseDirty = true;
+        if (nodeDatabaseDirtySince == 0)
+            nodeDatabaseDirtySince = Time::skipZero(millis()); // 0 means "not pending"
+        if (Throttle::isWithinTimespanMs(nodeDatabaseDirtySince, HYDRA_NODEDB_DEFER_WHILE_BLE)) {
+            LOG_DEBUG("Defer NodeDB save: BLE connected");
+            return true;
+        }
+        LOG_WARN("NodeDB save held %u s behind BLE, saving anyway", (unsigned)((millis() - nodeDatabaseDirtySince) / 1000));
+    }
+#endif
+
 #ifdef FSCom
     spiLock->lock();
     FSCom.mkdir("/prefs");
@@ -3386,9 +3405,17 @@ bool NodeDB::saveNodeDatabaseToDisk()
 
     size_t nodeDatabaseSize;
     pb_get_encoded_size(&nodeDatabaseSize, meshtastic_NodeDatabase_fields, &nodeDatabase);
-    bool ok = saveProto(nodeDatabaseFileName, nodeDatabaseSize, &meshtastic_NodeDatabase_msg, &nodeDatabase, false);
-    if (ok)
+    // hydra: HYDRA_NODEDB_ATOMIC_SAVE=1 writes nodes.proto via .tmp + rename, so a crash or power loss
+    // mid-write keeps the previous file instead of an empty one. Needs room for two copies on the filesystem.
+#ifndef HYDRA_NODEDB_ATOMIC_SAVE
+#define HYDRA_NODEDB_ATOMIC_SAVE 0
+#endif
+    bool ok = saveProto(nodeDatabaseFileName, nodeDatabaseSize, &meshtastic_NodeDatabase_msg, &nodeDatabase,
+                        HYDRA_NODEDB_ATOMIC_SAVE != 0);
+    if (ok) {
         nodeDatabaseDirty = false;
+        nodeDatabaseDirtySince = 0;
+    }
 
     nodeDatabase.positions.clear();
     nodeDatabase.positions.shrink_to_fit();

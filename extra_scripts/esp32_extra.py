@@ -72,4 +72,11 @@ env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", esp32_create_combined_bin)
 
 # Enable Newlib Nano formatting to save space
 # ...but allow printf float support (compromise)
-env.Append(LINKFLAGS=["--specs=nano.specs", "-u", "_printf_float"])
+# hydra: custom_newlib_nano = no links the full newlib (libc.a). ESP-IDF's linker script places
+# memcpy/memset/memmove and other libc routines in IRAM only for libc.a objects; with libc_nano.a
+# they land in flash, and the classic-ESP32 Bluetooth controller interrupt then calls flash code
+# while a flash write has the cache off (Cache error / ld_acl.c / ea.c panics).
+if str(env.GetProjectOption("custom_newlib_nano", "yes")).strip().lower() in ("no", "false", "0", "off"):
+    print("Newlib: full libc.a (custom_newlib_nano = no), libc routines stay in IRAM")
+else:
+    env.Append(LINKFLAGS=["--specs=nano.specs", "-u", "_printf_float"])

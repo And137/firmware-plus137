@@ -733,6 +733,7 @@ class NodeDB
     uint32_t lastSort = 0;           // When last sorted the nodeDB
 
     bool nodeDatabaseDirty = false; // nodes.proto is behind the in-memory db
+    uint32_t nodeDatabaseDirtySince = 0; // hydra: millis() of the first save held back by a BLE connection, 0 = none
     int onReboot(void *unused);
     CallbackObserver<NodeDB, void *> rebootObserver = CallbackObserver<NodeDB, void *>(this, &NodeDB::onReboot);
 

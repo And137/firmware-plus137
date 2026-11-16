@@ -1,8 +1,7 @@
 # firmware+ for Hydra boards (Meshtastic develop 2.8.3)
 
 Fork of the Meshtastic firmware `develop` branch for Hydra boards (ESP32 with a LoRa E22P-868M30S radio).
-Build environments: `hydra`, `hydraE22P` (no PSRAM), `hydraE22P_psram` (Freenove ESP32-WROVER, up to 1000 nodes)
-and `hydraE22P_idf4` (ESP-IDF 4.4 test build, no Bluetooth).
+Build environments: `hydra`, `hydra_psram` (standard E22, ESP32-WROVER with PSRAM), `hydraE22P` (no PSRAM) and `hydraE22P_psram` (Freenove ESP32-WROVER, up to 1000 nodes).
 
 Main additions over upstream: node statistics on demand (OnDemand), telemetry and position limiters,
 opportunistic flooding, NodeMod / SignalReply, Wi-Fi and Bluetooth TX power settings, and extra
@@ -11,15 +10,24 @@ Based on upstream `develop` from 2026-11-02.
 
 ## Change log
 
+### Build 40 (2026-11-16)
+- Bluetooth crash fix: newlib-nano (`--specs=nano.specs`) linked `memcpy`/`memset`/`memmove` into flash; the classic-ESP32 Bluetooth controller interrupt called them during flash writes and panicked (`Cache error`, `ld_acl.c` / `ea.c` asserts) or broke the write (`Readback failed`). Hydra builds now link the full newlib (`newlib_nano = no`) and drop the IRAM memcpy/memset wrappers.
+- NimBLE host task back on the default core 0.
+- NodeDB: `nodes.proto` saved atomically (`HYDRA_NODEDB_ATOMIC_SAVE`); routine saves held while a phone is connected over BLE, at most 30 min (`HYDRA_NODEDB_DEFER_WHILE_BLE`).
+- `HYDRA_NO_USER_BUTTON`: no user button on GPIO39 (a floating pin read as a held button and put the node into deep sleep).
+- New environment `hydra_psram` (standard E22, ESP32-WROVER with PSRAM); all Hydra environments in `variants/esp32/diy/hydra`.
+- PSRAM environments: `CONFIG_SPIRAM_MALLOC_RESERVE_INTERNAL=32768`, `CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=16384`, Bluetooth controller HLI off, 256-byte flash write chunks.
+- OnDemand node stats no longer crash when the radio is missing.
+
 ### Build 39 (2026-11-15)
-- Configuration: all Hydra settings in `[hydra_userprefs]` (`variants/esp32/diy/hydra_e22p/platformio.ini`), shared by every Hydra environment.
+- Configuration: all Hydra settings in `[hydra_userprefs]` (`variants/esp32/diy/hydra/platformio.ini`), shared by every Hydra environment.
 - Initial values: node name, role (router roles allowed via `USERPREFS_ALLOW_ROUTER_ROLES`), LoRa TX power 2 dBm, fixed position, Wi-Fi, Wi-Fi TX power.
 - `custom_ota_loader`: Meshtastic OTA loader `mt-esp32-ota.bin` bundled at 0x260000 in `factory.bin` and upload.
 - `custom_admin_keys`: admin public keys in base64, as shown in the app.
 - `ROUTER_MIN_TELEMETRY_INTERVAL_SECS` (4 h) and `NEIGHBORINFO_ALLOW_DEFAULT_CHANNEL` (NeighborInfo over LoRa on the default channel).
 - Traceroute rate limit 10 s (upstream 30 s).
 - Version string `2.8.3.<build>` with suffix `P` (E22P), `R` (PSRAM), `PR` (both).
-- Bluetooth: NimBLE host task on core 1 (fixes the `npl_freertos_eventq_remove` panic on BLE teardown); settings saved before Bluetooth is disabled; no-reboot module configs (NodeMod) keep Bluetooth on; advertising restarts after a disconnect during config download.
+- Bluetooth: settings saved before Bluetooth is disabled (a NimBLE teardown panic can no longer lose them); no-reboot module configs (NodeMod) keep Bluetooth on; advertising restarts after a disconnect during config download.
 
 ### Build 38 (2026-11-07)
 - NodeMod, SignalReply, noise floor field in OnDemand.

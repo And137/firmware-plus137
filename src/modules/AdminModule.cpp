@@ -491,7 +491,7 @@ bool AdminModule::handleReceivedProtobuf(const meshtastic_MeshPacket &mp, meshta
         hasOpenEditTransaction = false;
         deferredEditSegments = 0;
         saveChanges(SEGMENT_CONFIG | SEGMENT_MODULECONFIG | SEGMENT_DEVICESTATE | SEGMENT_CHANNELS | SEGMENT_NODEDATABASE);
-        // hydra: BLE teardown can panic in NimBLE (eventq race); save first so a crash cannot lose the settings
+        // hydra: save before tearing BLE down, so a crash during the teardown cannot lose the settings
         disableBluetooth();
         flushChannelWarnings(); // one coalesced message for everything edited in this transaction
         break;
@@ -1251,7 +1251,7 @@ void AdminModule::handleSetConfig(const meshtastic_Config &c, bool fromOthers)
     // end of switch case which_payload_variant
 
     saveChanges(changes, requiresReboot);
-    // hydra: BLE teardown can panic in NimBLE (eventq race); save first so a crash cannot lose the settings
+    // hydra: save before tearing BLE down, so a crash during the teardown cannot lose the settings
     if (requiresReboot && !hasOpenEditTransaction) {
         disableBluetooth();
     }

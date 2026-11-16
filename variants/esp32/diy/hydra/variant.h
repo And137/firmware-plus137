@@ -7,11 +7,13 @@
 #define GPS_RX_PIN 12
 #define PIN_GPS_EN 4
 
-#define BUTTON_PIN 39 // The middle button GPIO on the T-Beam
-// Note: On the ESP32 base version, gpio34-39 are input-only, and do not have internal pull-ups.
-// If 39 is not being used for a button, it is suggested to remove the #define.
+// User button on GPIO39 (input-only, no internal pull-up). HYDRA_NO_USER_BUTTON in [hydra_userprefs] removes it
+// for boards without the button, where the floating pin would read as a held button.
+#ifndef HYDRA_NO_USER_BUTTON
+#define BUTTON_PIN 39
+#endif
 #define BATTERY_PIN 35 // A battery voltage measurement pin, voltage divider connected here to measure battery voltage
-#define ADC_CHANNEL ADC_CHANNEL_7
+#define ADC_CHANNEL ADC_CHANNEL_7 // ADC1 channel 7 = GPIO35 (IDF 5+ adc_channel_t)
 #define ADC_MULTIPLIER 1.85 // (R1 = 470k, R2 = 680k)
 #define EXT_PWR_DETECT 4    // Pin to detect connected external power source for LILYGO® TTGO T-Energy T18 and other DIY boards
 #define EXT_NOTIFY_OUT 12   // Overridden default pin to use for Ext Notify Module (#975).
@@ -22,7 +24,14 @@
 #define USE_SX1268 // E22-400M30S uses SX1268
 #define SX126X_MAX_POWER                                                                                                         \
     22 // Outputting 22dBm from SX1262 results in ~30dBm E22-900M30S output (module only uses last stage of the YP2233W PA)
-#define SX126X_DIO3_TCXO_VOLTAGE 1.8 // E22 series TCXO reference voltage is 1.8V
+// E22P-868M30S: same SX1262 + 30 dBm PA, 22 dBm at the chip = ~30 dBm at the antenna. lora.tx_power 22 is the
+// maximum; higher values are outside the SX1262 range and are rejected.
+
+#ifdef EBYTE_E22
+// EBYTE E22 / E22P: TCXO on DIO3 at 1.8 V
+#define SX126X_DIO3_TCXO_VOLTAGE 1.8
+#define TCXO_OPTIONAL
+#endif
 
 #define SX126X_CS 18    // EBYTE module's NSS pin
 #define SX126X_SCK 5    // EBYTE module's SCK pin
@@ -33,7 +42,13 @@
 #define SX126X_DIO1 33  // EBYTE module's DIO1 pin
 
 #define SX126X_TXEN 13 // Schematic connects EBYTE module's TXEN pin to MCU
-#define SX126X_RXEN 14 // Schematic connects EBYTE module's RXEN pin to MCU
+
+#if defined(USE_EBYTE_E22P) // For Ebyte E22P-868M30S and E22P-915M30S modules - pin 14 always HIGH
+    #define SX126X_RXEN RADIOLIB_NC
+    #define SX126X_POWER_EN 14
+#else
+    #define SX126X_RXEN 14 // Schematic connects EBYTE module's RXEN pin to MCU
+#endif
 
 #define LORA_CS SX126X_CS       // Compatibility with variant file configuration structure
 #define LORA_SCK SX126X_SCK     // Compatibility with variant file configuration structure

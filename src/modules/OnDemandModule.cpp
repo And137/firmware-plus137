@@ -402,16 +402,18 @@ meshtastic_OnDemand OnDemandModule::prepareNodeStats()
     onDemand.variant.response.response_data.node_stats.has_blocked_by_hoplimit = true;
     onDemand.variant.response.response_data.node_stats.has_firmware_version = true;
 
+    // hydra: no radio (missing or failed init) leaves instance null; report zero counters instead of crashing
+    RadioLibInterface *radio = RadioLibInterface::instance;
     onDemand.variant.response.response_data.node_stats.battery_level = (!powerStatus->getHasBattery() || powerStatus->getIsCharging()) ? MAGIC_USB_BATTERY_LEVEL : powerStatus->getBatteryChargePercent();
     onDemand.variant.response.response_data.node_stats.voltage = powerStatus->getBatteryVoltageMv() / 1000.0;
     onDemand.variant.response.response_data.node_stats.channel_utilization = airTime->channelUtilizationPercent();
     onDemand.variant.response.response_data.node_stats.has_noise_floor = true; // hydra: szum radia (OnDemand, bez local_stats przez mesh)
-    onDemand.variant.response.response_data.node_stats.noise_floor = RadioLibInterface::instance ? RadioLibInterface::instance->getAverageNoiseFloor() : 0;
+    onDemand.variant.response.response_data.node_stats.noise_floor = radio ? radio->getAverageNoiseFloor() : 0;
     onDemand.variant.response.response_data.node_stats.air_util_tx = airTime->utilizationTXPercent();
     onDemand.variant.response.response_data.node_stats.uptime_seconds = getUptimeSeconds();
-    onDemand.variant.response.response_data.node_stats.num_packets_tx = RadioLibInterface::instance->txGood;
-    onDemand.variant.response.response_data.node_stats.num_packets_rx = RadioLibInterface::instance->rxGood + RadioLibInterface::instance->rxBad;
-    onDemand.variant.response.response_data.node_stats.num_packets_rx_bad = RadioLibInterface::instance->rxBad;
+    onDemand.variant.response.response_data.node_stats.num_packets_tx = radio ? radio->txGood : 0;
+    onDemand.variant.response.response_data.node_stats.num_packets_rx = radio ? radio->rxGood + radio->rxBad : 0;
+    onDemand.variant.response.response_data.node_stats.num_packets_rx_bad = radio ? radio->rxBad : 0;
     onDemand.variant.response.response_data.node_stats.num_online_nodes = nodeDB->getNumOnlineMeshNodes(true);
     onDemand.variant.response.response_data.node_stats.num_total_nodes = nodeDB->getNumMeshNodes();
     onDemand.variant.response.response_data.node_stats.num_rx_dupe = router->rxDupe;
@@ -420,7 +422,7 @@ meshtastic_OnDemand OnDemandModule::prepareNodeStats()
 #ifdef ARCH_PORTDUINO
     onDemand.variant.response.response_data.node_stats.num_tx_relay = SimRadio::instance->txRelay;
 #else
-    onDemand.variant.response.response_data.node_stats.num_tx_relay = RadioLibInterface::instance->txRelay;
+    onDemand.variant.response.response_data.node_stats.num_tx_relay = radio ? radio->txRelay : 0;
 #endif
     onDemand.variant.response.response_data.node_stats.reboots = myNodeInfo.reboot_count;
     onDemand.variant.response.response_data.node_stats.memory_free_cheap = memGet.getFreeHeap();
@@ -433,9 +435,9 @@ meshtastic_OnDemand OnDemandModule::prepareNodeStats()
     onDemand.variant.response.response_data.node_stats.rebroadcast_mode = config.device.rebroadcast_mode;
     // hydra: byte counters already kept by RadioLibInterface (same source as local_stats_extended)
     onDemand.variant.response.response_data.node_stats.has_rx_total_bytes = true;
-    onDemand.variant.response.response_data.node_stats.rx_total_bytes = RadioLibInterface::instance->rxTotalBytes;
+    onDemand.variant.response.response_data.node_stats.rx_total_bytes = radio ? radio->rxTotalBytes : 0;
     onDemand.variant.response.response_data.node_stats.has_tx_total_bytes = true;
-    onDemand.variant.response.response_data.node_stats.tx_total_bytes = RadioLibInterface::instance->txTotalBytes;
+    onDemand.variant.response.response_data.node_stats.tx_total_bytes = radio ? radio->txTotalBytes : 0;
     // Ensure null-terminated firmware_version to avoid nanopb string overflow
     strncpy(onDemand.variant.response.response_data.node_stats.firmware_version,
             optstr(APP_VERSION_SHORT),
