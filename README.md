@@ -101,7 +101,7 @@ Full change log: [HYDRA.md](HYDRA.md).
 Special thanks to:
 
 - [musznik/firmware](https://github.com/musznik/firmware), the original FW+ (Meshtastic+, [loranet.pl](https://loranet.pl)).
-  Without it there would be no FW+.
+  Without him there would be no FW+.
 - [JacekVV](https://github.com/JacekVV), whose fork
   [Meshtastic-develop---2.8.3-hdev](https://github.com/JacekVV/Meshtastic-develop---2.8.3-hdev) became the base of
   this FW+ version.
