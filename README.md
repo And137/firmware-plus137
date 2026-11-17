@@ -2,19 +2,22 @@
 
 <img src=".github/meshtastic_logo.png" alt="Meshtastic Logo" width="80"/>
 
-<h1>firmware+ for Hydra boards (Meshtastic develop 2.8.3)</h1>
+<h1>firmware+ for Meshtastic routers (Meshtastic develop 2.8.3)</h1>
 
 </div>
 
 ## Overview
 
-Fork of the Meshtastic firmware `develop` branch, built for Hydra boards: ESP32 with a LoRa E22P-868M30S radio.
+Fork of the Meshtastic firmware `develop` branch for router nodes (ROUTER / ROUTER_LATE).
 Build environments:
 
-- `hydra` - Meshtastic DIY v1 Hydra board (hardware model `HYDRA`).
-- `hydra_psram` - Hydra with a standard E22 module on an ESP32-WROVER with PSRAM (up to 1000 nodes).
-- `hydraE22P` - ESP32 without PSRAM, E22P module.
-- `hydraE22P_psram` - Freenove ESP32-WROVER board with PSRAM (up to 1000 nodes).
+| Environment | Board | Version suffix |
+| ----------- | ----- | -------------- |
+| `hydra` | Meshtastic DIY v1 Hydra, ESP32 without PSRAM, standard E22 (hardware model `HYDRA`) | none |
+| `hydra_psram` | Hydra on an ESP32-WROVER with PSRAM, standard E22 (up to 1000 nodes) | `R` |
+| `hydraE22P` | Hydra, ESP32 without PSRAM, E22P module | `P` |
+| `hydraE22P_psram` | Freenove ESP32-WROVER with PSRAM, E22P module (up to 1000 nodes) | `PR` |
+| `nrf52_promicro_diy_tcxo` | nRF52840 Pro-micro DIY with an E22 / HT-RA62 module (TCXO) | none |
 
 > [!WARNING]
 > **Never flash an E22P build (`hydraE22P`, `hydraE22P_psram`, version suffix `P` / `PR`) onto a board with a standard E22 module.**
@@ -25,21 +28,21 @@ Build environments:
 Main additions over upstream: node statistics on demand (OnDemand), telemetry and position limiters,
 opportunistic flooding, NodeMod / SignalReply, Wi-Fi and Bluetooth TX power settings, and extra
 diagnostics (channel utilization, flash and heap counters, relay and duplicate counters).
+Wi-Fi / Bluetooth TX power and the ESP32 power-management fixes apply to Hydra only; the nRF52 build has the
+FW+ modules and statistics.
 Based on upstream `develop` from 2026-11-02.
 
 ## Version string
 
-`2.8.3.137<build><suffix>`, for example `2.8.3.1371PR` for build 1. The build number comes from `hydra_build.txt`;
-the firmware-plus137 numbering restarted at 1 (builds up to 40 used `2.8.3.<build><suffix>`). The same `137<build>`
-number is the FW+ version reported over OnDemand.
+`2.8.3.137<build><suffix>`, for example `2.8.3.1371PR` for build 1. The build number comes from `hydra_build.txt`
+and is shared by every environment; the firmware-plus137 numbering restarted at 1 (builds up to 40 used
+`2.8.3.<build><suffix>`). The same `137<build>` number is the FW+ version reported over OnDemand. The suffix
+marks the Hydra variant (see the table above): `P` = E22P module, `R` = PSRAM.
 
-| Suffix | Variant |
-| ------ | ------- |
-| none   | `hydra` |
-| `P`    | E22P module (`hydraE22P`) |
-| `PR`   | E22P module with PSRAM (`hydraE22P_psram`) |
+## Flashing the nRF52 Pro-micro
 
-`R` alone marks a PSRAM build without E22P (`hydra_psram`).
+Double-tap reset (or short RST to GND twice) to open the UF2 bootloader drive, then copy
+`firmware-nrf52_promicro_diy_tcxo-<version>.uf2` onto it. The `.zip` is for DFU updates over USB or Bluetooth.
 
 ## Configuration
 
@@ -68,6 +71,7 @@ Values marked `USERPREFS_*` are applied on the first boot after a clean flash or
 
 Full change log: [HYDRA.md](HYDRA.md).
 
+- **Build 1371 (2026-11-17):** new numbering `2.8.3.137<build>`, compatibility with the new FW+ app (`wifi_power` / `bt_power` moved to fields 200/201, Broadcast Assist over admin), BLE kept up on routers, nRF52 Pro-micro build.
 - **Build 40 (2026-11-16):** Bluetooth crash fix (full newlib), atomic NodeDB save, `hydra_psram` environment, no user button on GPIO39.
 - **Build 39 (2026-11-15):** shared `[hydra_userprefs]`, bundled OTA loader, admin keys in base64, version `2.8.3.39P/PR`, traceroute limit 10 s, Bluetooth stability fixes.
 - **Build 38 (2026-11-07):** NodeMod, SignalReply, noise floor in OnDemand, `wifi_power` / `bt_power` LoRa fields, admin origin gate.
