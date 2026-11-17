@@ -509,8 +509,9 @@ meshtastic_OnDemand OnDemandModule::prepareNodeStats()
 #if defined(ARCH_NRF52)
     onDemand.variant.response.response_data.node_stats.has_flash_used_bytes = true;
     onDemand.variant.response.response_data.node_stats.has_flash_total_bytes = true;
-    onDemand.variant.response.response_data.node_stats.flash_used_bytes = calculateNRF5xUsedBytes(); 
-    onDemand.variant.response.response_data.node_stats.flash_total_bytes =  getNRF5xTotalBytes(); 
+    // fw+: littlefs v1 has no usedBytes(); FSCommon counts blocks with lfs_traverse()
+    onDemand.variant.response.response_data.node_stats.flash_used_bytes = fsUsedBytes();
+    onDemand.variant.response.response_data.node_stats.flash_total_bytes = fsTotalBytes();
 #endif
         
     // Safety: if this NodeStats payload would exceed radio MTU, drop non-essential fields

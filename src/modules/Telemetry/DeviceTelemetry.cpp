@@ -166,6 +166,12 @@ meshtastic_Telemetry DeviceTelemetryModule::getLocalStatsExtendedTelemetry()
     telemetry.variant.local_stats_extended.memory_psram_free = memGet.getFreePsram();
     telemetry.variant.local_stats_extended.has_memory_psram_total = true;
     telemetry.variant.local_stats_extended.memory_psram_total = memGet.getPsramSize();
+#elif defined(ARCH_NRF52)
+    // fw+: littlefs v1 has no usedBytes(); FSCommon counts blocks with lfs_traverse()
+    telemetry.variant.local_stats_extended.has_flash_used_bytes = true;
+    telemetry.variant.local_stats_extended.has_flash_total_bytes = true;
+    telemetry.variant.local_stats_extended.flash_used_bytes = fsUsedBytes();
+    telemetry.variant.local_stats_extended.flash_total_bytes = fsTotalBytes();
 #endif
 
     return telemetry;
