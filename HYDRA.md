@@ -10,6 +10,13 @@ Based on upstream `develop` from 2026-11-02.
 
 ## Change log
 
+### Unreleased (build 1371)
+- New numbering: version `2.8.3.137<build><suffix>` and FW+ version `137<build>`, counter restarted at 1 (`2.8.3.1371PR`, FW+ version 1371).
+- `LoRaConfig.wifi_power` / `bt_power` renumbered 108/109 -> 200/201: field 108 collides with upstream `LoRaConfig.transparent_mode`, which current Meshtastic apps decode as a bool. Saved values from earlier builds reset to defaults once.
+- Broadcast Assist config readable and writable over admin (`BROADCAST_ASSIST_CONFIG` get, `broadcast_assist` set, applied without reboot).
+- The connect-time config dump now also carries NodeMod and Broadcast Assist, so clients show the real values without a separate request.
+- ROUTER / ROUTER_LATE (and `is_power_saving`) no longer light-sleep while a BLE client is connected: the DARK -> LS timer used to fire on a connected but quiet phone, and the 30 s sleep dropped the link. The node now returns to DARK instead and sleeps after the client disconnects.
+
 ### Build 40 (2026-11-16)
 - Bluetooth crash fix: newlib-nano (`--specs=nano.specs`) linked `memcpy`/`memset`/`memmove` into flash; the classic-ESP32 Bluetooth controller interrupt called them during flash writes and panicked (`Cache error`, `ld_acl.c` / `ea.c` asserts) or broke the write (`Readback failed`). Hydra builds now link the full newlib (`newlib_nano = no`) and drop the IRAM memcpy/memset wrappers.
 - NimBLE host task back on the default core 0.
@@ -46,4 +53,4 @@ Based on upstream `develop` from 2026-11-02.
 - Develop build numbering.
 
 ### Submodule `protobufs` (commit 777faea)
-- `LoRaConfig.wifi_power = 108`, `LoRaConfig.bt_power = 109`, `NodeStats.noise_floor = 40`, and NodeStats counters.
+- `LoRaConfig.wifi_power = 200`, `LoRaConfig.bt_power = 201` (108/109 until the Unreleased entry), `NodeStats.noise_floor = 40`, and NodeStats counters.

@@ -6,7 +6,10 @@ build_location = os.getenv('BUILD_LOCATION', 'local')
 
 # hydra: local build counter, appended to the version as "-v<n>"
 HYDRA_BUILD_FILE = "hydra_build.txt"
-# hydra: version format "<major>.<minor>.<build>.<hydra build>", e.g. "2.8.3.39"; suffix P = E22P, R = PSRAM, PR = both.
+# hydra: version format "<major>.<minor>.<build>.137<hydra build>", e.g. "2.8.3.1371" for build 1; suffix P = E22P,
+# R = PSRAM, PR = both. 137 marks the firmware-plus137 line; the build counter restarted at 1 with it. The same
+# "137<build>" number is the FW+ version OnDemand reports (FW_PLUS_VERSION).
+HYDRA_SERIES = 137
 # Same shape as upstream "2.8.3.<sha>", so the apps parse it as 2.8.3.
 # DeviceMetadata.firmware_version is char[18], so at most 17 chars + NUL
 MAX_VERSION_LEN = 17
@@ -21,7 +24,7 @@ def readHydraBuild(projectDir):
 def readProps(prefsLoc, buildSuffix=""):
     """Read the version of our project as a string
 
-    buildSuffix is appended to the hydra build number ("P" E22P, "R" PSRAM, "PR" both: "2.8.3.39PR")."""
+    buildSuffix is appended to the hydra build number ("P" E22P, "R" PSRAM, "PR" both: "2.8.3.1371PR")."""
 
     config = configparser.RawConfigParser()
     config.read(prefsLoc)
@@ -53,8 +56,10 @@ def readProps(prefsLoc, buildSuffix=""):
         verObj["long"] = "{}.{}".format(verObj["short"], suffix)
         hydraBuild = readHydraBuild(os.path.dirname(os.path.abspath(prefsLoc)))
         if hydraBuild is not None:
-            # "2.8.3.39": the commit sha stays in "deb" and in git, firmware_version only fits 17 chars
-            hydraVersion = "{}.{}{}".format(verObj["short"], hydraBuild, buildSuffix)[:MAX_VERSION_LEN]
+            # "2.8.3.1371": the commit sha stays in "deb" and in git, firmware_version only fits 17 chars
+            fwPlusVersion = "{}{}".format(HYDRA_SERIES, hydraBuild)
+            hydraVersion = "{}.{}{}".format(verObj["short"], fwPlusVersion, buildSuffix)[:MAX_VERSION_LEN]
+            verObj["fw_plus_version"] = fwPlusVersion
             verObj["long"] = hydraVersion
             verObj["display"] = hydraVersion
         verObj["deb"] = "{}.{}~{}{}".format(verObj["short"], run_number, build_location, sha)

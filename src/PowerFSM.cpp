@@ -119,6 +119,16 @@ static uint32_t secsSlept;
 #define MESHTASTIC_LIGHT_SLEEP_IGNORE_USB_CONSOLE 0
 #endif
 
+/// hydra: a light sleep drops a live BLE link (the 30 s naps outlast the supervision timeout)
+static bool bluetoothClientConnected()
+{
+#if defined(ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32S2) && !MESHTASTIC_EXCLUDE_BLUETOOTH
+    return nimbleBluetooth && nimbleBluetooth->isActive() && nimbleBluetooth->isConnected();
+#else
+    return false;
+#endif
+}
+
 static void lsEnter()
 {
     LOG_POWERFSM("lsEnter begin, ls_secs=%u", config.power.ls_secs);
@@ -135,6 +145,13 @@ static void lsIdle()
     // LOG_INFO("lsIdle begin ls_secs=%u", getPref_ls_secs());
 
 #ifdef ARCH_ESP32
+
+    // hydra: the DARK/NB -> LS timers fire on a phone that is connected but quiet; go back to DARK instead
+    if (bluetoothClientConnected()) {
+        LOG_DEBUG("Skip light sleep: BLE client connected");
+        powerFSM.trigger(EVENT_CONTACT_FROM_PHONE);
+        return;
+    }
 
     // Do we have more sleeping to do?
     if (secsSlept < config.power.ls_secs) {
@@ -446,6 +463,9 @@ void PowerFSM_setup()
     powerFSM.add_transition(&stateSERIAL, &stateON, EVENT_SERIAL_DISCONNECTED, NULL, "serial disconnect");
 
     powerFSM.add_transition(&stateDARK, &stateDARK, EVENT_CONTACT_FROM_PHONE, NULL, "Contact from phone");
+    // hydra: lsIdle() raises this while a BLE client is connected; a router's NB keeps BLE up too
+    powerFSM.add_transition(&stateLS, &stateDARK, EVENT_CONTACT_FROM_PHONE, NULL, "Contact from phone");
+    powerFSM.add_transition(&stateNB, &stateDARK, EVENT_CONTACT_FROM_PHONE, NULL, "Contact from phone");
 
 #ifdef USE_EINK
     // Allow E-Ink devices to suppress the screensaver, if screen timeout set to 0

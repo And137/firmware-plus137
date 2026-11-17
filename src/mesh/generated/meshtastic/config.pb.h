@@ -959,8 +959,8 @@ extern "C" {
 #define meshtastic_Config_LoRaConfig_config_ok_to_mqtt_tag 105
 #define meshtastic_Config_LoRaConfig_fem_lna_mode_tag 106
 #define meshtastic_Config_LoRaConfig_serial_hal_only_tag 107
-#define meshtastic_Config_LoRaConfig_wifi_power_tag 108
-#define meshtastic_Config_LoRaConfig_bt_power_tag 109
+#define meshtastic_Config_LoRaConfig_wifi_power_tag 200
+#define meshtastic_Config_LoRaConfig_bt_power_tag 201
 #define meshtastic_Config_BluetoothConfig_enabled_tag 1
 #define meshtastic_Config_BluetoothConfig_mode_tag 2
 #define meshtastic_Config_BluetoothConfig_fixed_pin_tag 3
@@ -1116,8 +1116,8 @@ X(a, STATIC,   SINGULAR, BOOL,     ignore_mqtt,     104) \
 X(a, STATIC,   SINGULAR, BOOL,     config_ok_to_mqtt, 105) \
 X(a, STATIC,   SINGULAR, UENUM,    fem_lna_mode,    106) \
 X(a, STATIC,   SINGULAR, BOOL,     serial_hal_only, 107) \
-X(a, STATIC,   SINGULAR, SINT32,   wifi_power,      108) \
-X(a, STATIC,   SINGULAR, SINT32,   bt_power,        109)
+X(a, STATIC,   SINGULAR, SINT32,   wifi_power,      200) \
+X(a, STATIC,   SINGULAR, SINT32,   bt_power,        201)
 #define meshtastic_Config_LoRaConfig_CALLBACK NULL
 #define meshtastic_Config_LoRaConfig_DEFAULT NULL
 

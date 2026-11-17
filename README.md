@@ -16,6 +16,12 @@ Build environments:
 - `hydraE22P` - ESP32 without PSRAM, E22P module.
 - `hydraE22P_psram` - Freenove ESP32-WROVER board with PSRAM (up to 1000 nodes).
 
+> [!WARNING]
+> **Never flash an E22P build (`hydraE22P`, `hydraE22P_psram`, version suffix `P` / `PR`) onto a board with a standard E22 module.**
+> It damages the radio. Match the build to the module on the board: standard E22 -> `hydra` or `hydra_psram`
+> (no suffix / `R`), E22P -> `hydraE22P` or `hydraE22P_psram` (`P` / `PR`). The suffix is the last part of the
+> firmware version shown in the app, so check it before updating over OTA as well.
+
 Main additions over upstream: node statistics on demand (OnDemand), telemetry and position limiters,
 opportunistic flooding, NodeMod / SignalReply, Wi-Fi and Bluetooth TX power settings, and extra
 diagnostics (channel utilization, flash and heap counters, relay and duplicate counters).
@@ -23,7 +29,9 @@ Based on upstream `develop` from 2026-11-02.
 
 ## Version string
 
-`2.8.3.<build><suffix>`, for example `2.8.3.40PR`. The build number comes from `hydra_build.txt`.
+`2.8.3.137<build><suffix>`, for example `2.8.3.1371PR` for build 1. The build number comes from `hydra_build.txt`;
+the firmware-plus137 numbering restarted at 1 (builds up to 40 used `2.8.3.<build><suffix>`). The same `137<build>`
+number is the FW+ version reported over OnDemand.
 
 | Suffix | Variant |
 | ------ | ------- |

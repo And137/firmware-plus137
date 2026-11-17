@@ -938,6 +938,18 @@ size_t PhoneAPI::getFromRadio(uint8_t *buf)
             fromRadioScratch.moduleConfig.which_payload_variant = meshtastic_ModuleConfig_node_mod_admin_tag;
             fromRadioScratch.moduleConfig.payload_variant.node_mod_admin = moduleConfig.node_mod_admin;
             break;
+        // fw+: these cases switch on ModuleConfigType values (19, 23) that no ModuleConfig tag above uses; the loop
+        // visits every value up to _meshtastic_AdminMessage_ModuleConfigType_MAX + 1.
+        case meshtastic_AdminMessage_ModuleConfigType_NODEMOD_CONFIG:
+            LOG_DEBUG("Send module config: node mod");
+            fromRadioScratch.moduleConfig.which_payload_variant = meshtastic_ModuleConfig_node_mod_tag;
+            fromRadioScratch.moduleConfig.payload_variant.node_mod = moduleConfig.node_mod;
+            break;
+        case meshtastic_AdminMessage_ModuleConfigType_BROADCAST_ASSIST_CONFIG:
+            LOG_DEBUG("Send module config: broadcast assist");
+            fromRadioScratch.moduleConfig.which_payload_variant = meshtastic_ModuleConfig_broadcast_assist_tag;
+            fromRadioScratch.moduleConfig.payload_variant.broadcast_assist = moduleConfig.broadcast_assist;
+            break;
         default:
             LOG_DEBUG("Unhandled module config type %d", config_state);
         }

@@ -1535,12 +1535,12 @@ message Config {
     /*
      * hydra: moc Wi-Fi w dBm (zakres 2..21, poza zakresem obcinane). 0 = domyślna (HYDRA_WIFI_TX_POWER_QDBM)
      */
-    sint32 wifi_power = 108;
+    sint32 wifi_power = 200; // hydra: was 108, which collides with upstream LoRaConfig.transparent_mode
 
     /*
      * hydra: moc Bluetooth w dBm (zakres -12..9, poza zakresem obcinane). 0 = domyślna (+9 dBm)
      */
-    sint32 bt_power = 109;
+    sint32 bt_power = 201; // hydra: was 109, moved together with wifi_power
   }
 
   message BluetoothConfig {

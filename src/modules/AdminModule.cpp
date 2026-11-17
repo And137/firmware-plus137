@@ -1396,6 +1396,12 @@ bool AdminModule::handleSetModuleConfig(const meshtastic_ModuleConfig &c)
         moduleConfig.has_node_mod_admin = true;
         moduleConfig.node_mod_admin = c.payload_variant.node_mod_admin;
         break;
+    case meshtastic_ModuleConfig_broadcast_assist_tag: // fw+: BroadcastAssistModule reads moduleConfig.broadcast_assist live
+        LOG_INFO("Set module config: Broadcast Assist");
+        moduleConfig.has_broadcast_assist = true;
+        moduleConfig.broadcast_assist = c.payload_variant.broadcast_assist;
+        shouldReboot = false;
+        break;
     case meshtastic_ModuleConfig_tak_tag:
         LOG_INFO("Set module config: TAK");
         moduleConfig.has_tak = true;
@@ -1663,6 +1669,11 @@ void AdminModule::handleGetModuleConfig(const meshtastic_MeshPacket &req, const 
             res.get_module_config_response.which_payload_variant = meshtastic_ModuleConfig_node_mod_admin_tag;
             res.get_module_config_response.payload_variant.node_mod_admin = moduleConfig.node_mod_admin;
             res.get_module_config_response.payload_variant.node_mod_admin.current_tx_util_limit = myRegion->dutyCycle;
+            break;
+        case meshtastic_AdminMessage_ModuleConfigType_BROADCAST_ASSIST_CONFIG: // fw+
+            configName = "Broadcast Assist";
+            res.get_module_config_response.which_payload_variant = meshtastic_ModuleConfig_broadcast_assist_tag;
+            res.get_module_config_response.payload_variant.broadcast_assist = moduleConfig.broadcast_assist;
             break;
         case meshtastic_AdminMessage_ModuleConfigType_TAK_CONFIG:
             configName = "TAK";

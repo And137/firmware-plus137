@@ -429,7 +429,7 @@ flags = [
         "-DAPP_ENV=" + env.get("PIOENV"),
         "-DAPP_REPO=" + repo_owner,
         "-DBUILD_EPOCH=" + str(build_epoch),
-    ] + pref_flags
+    ] + (["-DHYDRA_FW_PLUS_VERSION=" + verObj["fw_plus_version"]] if "fw_plus_version" in verObj else []) + pref_flags
 
 print("Using flags:")
 for flag in flags:
