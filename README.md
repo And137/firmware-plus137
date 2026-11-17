@@ -19,6 +19,8 @@ Build environments:
 | `hydraE22P_psram` | Freenove ESP32-WROVER with PSRAM, E22P module (up to 1000 nodes) | `PR` |
 | `nrf52_promicro_diy_tcxo` | nRF52840 Pro-micro DIY with an E22 / HT-RA62 module (TCXO) | none |
 
+Tested on hardware: the Hydra variants. The nRF52 Pro-micro build is new and not yet tested in use.
+
 > [!WARNING]
 > **Never flash an E22P build (`hydraE22P`, `hydraE22P_psram`, version suffix `P` / `PR`) onto a board with a standard E22 module.**
 > It damages the radio. Match the build to the module on the board: standard E22 -> `hydra` or `hydra_psram`
@@ -44,7 +46,7 @@ marks the Hydra variant (see the table above): `P` = E22P module, `R` = PSRAM.
 Double-tap reset (or short RST to GND twice) to open the UF2 bootloader drive, then copy
 `firmware-nrf52_promicro_diy_tcxo-<version>.uf2` onto it. The `.zip` is for DFU updates over USB or Bluetooth.
 
-## Configuration
+## Hydra configuration
 
 All Hydra settings live in the `[hydra_userprefs]` section at the top of
 `variants/esp32/diy/hydra/platformio.ini` and apply to every Hydra environment.
