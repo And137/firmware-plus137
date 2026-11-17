@@ -11,26 +11,39 @@
 Fork of the Meshtastic firmware `develop` branch for router nodes (ROUTER / ROUTER_LATE).
 Build environments:
 
-| Environment | Board | Version suffix |
-| ----------- | ----- | -------------- |
-| `hydra` | Meshtastic DIY v1 Hydra, ESP32 without PSRAM, standard E22 (hardware model `HYDRA`) | none |
-| `hydra_psram` | Hydra on an ESP32-WROVER with PSRAM, standard E22 (up to 1000 nodes) | `R` |
-| `hydraE22P` | Hydra, ESP32 without PSRAM, E22P module | `P` |
-| `hydraE22P_psram` | Freenove ESP32-WROVER with PSRAM, E22P module (up to 1000 nodes) | `PR` |
-| `nrf52_promicro_diy_tcxo` | nRF52840 Pro-micro DIY with an E22 / HT-RA62 module (TCXO) | none |
+| Environment | Board | Suffix in 1371 | Suffix from 1372 |
+| ----------- | ----- | -------------- | ---------------- |
+| `hydra` | Meshtastic DIY v1 Hydra, ESP32 without PSRAM, standard E22 (hardware model `HYDRA`) | none | `hy` |
+| `hydra_psram` | Hydra on an ESP32-WROVER with PSRAM, standard E22 (up to 1000 nodes) | `R` | `hyR` |
+| `hydraE22P` | Hydra, ESP32 without PSRAM, E22P module | `P` | `hyP` |
+| `hydraE22P_psram` | Freenove ESP32-WROVER with PSRAM, E22P module (up to 1000 nodes) | `PR` | `hyPR` |
+| `nrf52_promicro_diy_tcxo` | nRF52840 Pro-micro DIY with an E22 / HT-RA62 module (TCXO) | none | `nF` |
+| `seeed_xiao_nrf52840_kit` | Seeed Xiao nRF52840 Kit (Wio-SX1262) | none | `Xn` |
+| `seeed-xiao-s3` | Seeed Xiao ESP32-S3 (Wio-SX1262, 8 MB flash, PSRAM) | none | `Xs` |
 
-Tested on hardware: the Hydra variants. The nRF52 Pro-micro build is new and not yet tested in use.
+Tested on hardware: the Hydra variants. The nRF52 Pro-micro build was checked on the bench (boots, Bluetooth,
+configuration) without a radio module. The Xiao builds are not tested yet.
+
+> [!NOTE]
+> **New version suffixes from the next release (build 1372).** Every build will name its board at the end of the
+> version: Hydra `hy` (`2.8.3.1372hy`, `hyR`, `hyP`, `hyPR`), Pro-micro `nF`, Xiao nRF52840 `Xn`, Xiao ESP32-S3 `Xs`.
+> `P` (E22P module) and `R` (PSRAM) keep their meaning. Release 1371 still uses the old form (`2.8.3.1371`, `R`,
+> `P`, `PR`).
 
 > [!WARNING]
-> **Never flash an E22P build (`hydraE22P`, `hydraE22P_psram`, version suffix `P` / `PR`) onto a board with a standard E22 module.**
+> **Never flash an E22P build (`hydraE22P`, `hydraE22P_psram`, version suffix `P` / `PR`, from build 1372 `hyP` / `hyPR`) onto a board with a standard E22 module.**
 > It damages the radio. Match the build to the module on the board: standard E22 -> `hydra` or `hydra_psram`
-> (no suffix / `R`), E22P -> `hydraE22P` or `hydraE22P_psram` (`P` / `PR`). The suffix is the last part of the
+> (none / `R`, later `hy` / `hyR`), E22P -> `hydraE22P` or `hydraE22P_psram` (`P` / `PR`, later `hyP` / `hyPR`). The suffix is the last part of the
 > firmware version shown in the app, so check it before updating over OTA as well.
+
+> [!CAUTION]
+> The Pro-micro build does not limit TX power for an external PA: with the default settings the SX1262 transmits
+> at 22 dBm. With an E22-900M30S or M33S module, set a low `tx_power` in the app before setting the region.
 
 Main additions over upstream: node statistics on demand (OnDemand), telemetry and position limiters,
 opportunistic flooding, NodeMod / SignalReply, Wi-Fi and Bluetooth TX power settings, and extra
 diagnostics (channel utilization, flash and heap counters, relay and duplicate counters).
-Wi-Fi / Bluetooth TX power and the ESP32 power-management fixes apply to Hydra only; the nRF52 build has the
+Wi-Fi / Bluetooth TX power settings and the NodeDB write fixes apply to Hydra only; the other boards have the
 FW+ modules and statistics.
 Based on upstream `develop` from 2026-11-02.
 
@@ -39,12 +52,15 @@ Based on upstream `develop` from 2026-11-02.
 `2.8.3.137<build><suffix>`, for example `2.8.3.1371PR` for build 1. The build number comes from `hydra_build.txt`
 and is shared by every environment; the firmware-plus137 numbering restarted at 1 (builds up to 40 used
 `2.8.3.<build><suffix>`). The same `137<build>` number is the FW+ version reported over OnDemand. The suffix
-marks the Hydra variant (see the table above): `P` = E22P module, `R` = PSRAM.
+marks the board (see the table above). From build 1372 every board has one: Hydra `hy`, plus `P` for the E22P
+module and `R` for PSRAM; `nF` = Pro-micro, `Xn` = Xiao nRF52840, `Xs` = Xiao ESP32-S3. In build 1371 only the
+Hydra PSRAM / E22P builds have a suffix (`R`, `P`, `PR`).
 
-## Flashing the nRF52 Pro-micro
+## Flashing
 
-Double-tap reset (or short RST to GND twice) to open the UF2 bootloader drive, then copy
-`firmware-nrf52_promicro_diy_tcxo-<version>.uf2` onto it. The `.zip` is for DFU updates over USB or Bluetooth.
+- **Hydra and Xiao ESP32-S3:** flash `firmware-<env>-<version>.factory.bin` at offset `0x0` with esptool.
+- **nRF52 (Pro-micro, Xiao nRF52840):** double-tap reset to open the UF2 bootloader drive, then copy
+  `firmware-<env>-<version>.uf2` onto it. The `.zip` is for DFU updates over USB or Bluetooth.
 
 ## Hydra configuration
 
@@ -73,7 +89,7 @@ Values marked `USERPREFS_*` are applied on the first boot after a clean flash or
 
 Full change log: [HYDRA.md](HYDRA.md).
 
-- **Build 1371 (2026-11-17):** new numbering `2.8.3.137<build>`, compatibility with the new FW+ app (`wifi_power` / `bt_power` moved to fields 200/201, Broadcast Assist over admin), BLE kept up on routers, nRF52 Pro-micro build.
+- **Build 1371 (2026-11-17):** new numbering `2.8.3.137<build>`, compatibility with the new FW+ app (`wifi_power` / `bt_power` moved to fields 200/201, Broadcast Assist over admin), BLE kept up on routers, new builds for nRF52 Pro-micro, Xiao nRF52840 Kit and Xiao ESP32-S3; board suffixes (`hy`, `nF`, `Xn`, `Xs`) start with build 1372.
 - **Build 40 (2026-11-16):** Bluetooth crash fix (full newlib), atomic NodeDB save, `hydra_psram` environment, no user button on GPIO39.
 - **Build 39 (2026-11-15):** shared `[hydra_userprefs]`, bundled OTA loader, admin keys in base64, version `2.8.3.39P/PR`, traceroute limit 10 s, Bluetooth stability fixes.
 - **Build 38 (2026-11-07):** NodeMod, SignalReply, noise floor in OnDemand, `wifi_power` / `bt_power` LoRa fields, admin origin gate.
@@ -82,7 +98,15 @@ Full change log: [HYDRA.md](HYDRA.md).
 
 ## Credits
 
-- Fork description: [musznik](https://github.com/musznik/firmware) (FW+ / Meshtastic+, [loranet.pl](https://loranet.pl)).
+Special thanks to:
+
+- [musznik/firmware](https://github.com/musznik/firmware), the original FW+ (Meshtastic+, [loranet.pl](https://loranet.pl)).
+  Without it there would be no FW+.
+- [JacekVV](https://github.com/JacekVV), whose fork
+  [Meshtastic-develop---2.8.3-hdev](https://github.com/JacekVV/Meshtastic-develop---2.8.3-hdev) became the base of
+  this FW+ version.
+
+Also:
+
 - Upstream firmware: the [Meshtastic](https://meshtastic.org) project and its contributors.
-- Previous fork: [JacekVV/Meshtastic-develop---2.8.3-hdev](https://github.com/JacekVV/Meshtastic-develop---2.8.3-hdev).
 - Board designs: [NanoVHF/Meshtastic-DIY](https://github.com/NanoVHF/Meshtastic-DIY/tree/main).
