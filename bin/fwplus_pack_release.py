@@ -38,7 +38,7 @@ def check_version(env, path):
     # firmware's own version string, which ends in the board suffix, is checked.
     data = open(path, "rb").read()
     want = f"{BASE}.{B}{SUF[env]}"
-    found = set(m.group().decode() for m in re.finditer(rb"(?<![v\w.])" + re.escape(BASE.encode()) + rb"\.137\d+[A-Za-z]{0,4}(?=\x00)", data))
+    found = set(m.group().decode() for m in re.finditer(rb"(?<![v\w.])" + re.escape(BASE.encode()) + rb"\.137\d+(?:[A-Za-z][A-Za-z0-9]{0,3})?(?=\x00)", data))
     assert found == {want}, (env, "expected", want, "found", found)
     return want
 
