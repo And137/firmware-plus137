@@ -1,0 +1,130 @@
+# firmware-plus137 (FW+) release build.
+#
+# Pushing a tag v<major.minor.build>.137<hydra_build> (e.g. v2.8.3.1373) builds every release env in parallel, packs
+# the files with bin/fwplus_pack_release.py (version check in every image, Hydra -ota / -noota factory images,
+# SHA256SUMS.txt) and creates a DRAFT GitHub release. Review it, add the release notes and publish it by hand.
+# It can also be started by hand for an existing tag (Actions -> FW+ release -> Run workflow).
+# The build uses the placeholders in variants/esp32/diy/hydra/platformio.ini; no secrets are needed.
+name: FW+ release
+
+on:
+  push:
+    tags: ['v*.137*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to build, e.g. v2.8.3.1373'
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fwplus-release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
+
+jobs:
+  check-version:
+    if: github.repository == 'And137/firmware-plus137'
+    runs-on: ubuntu-latest
+    outputs:
+      fwplus: ${{ steps.version.outputs.fwplus }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TAG }}
+      # The tag must match version.properties + hydra_build.txt, or the images would carry another version.
+      - id: version
+        run: |
+          base=$(python3 -c "import configparser as c; p=c.ConfigParser(); p.read('version.properties'); v=p['VERSION']; print(f\"{v['major'].strip()}.{v['minor'].strip()}.{v['build'].strip()}\")")
+          fwplus="137$(tr -d '[:space:]' < hydra_build.txt)"
+          if [ "$TAG" != "v${base}.${fwplus}" ]; then
+            echo "::error file=hydra_build.txt::tag $TAG does not match v${base}.${fwplus}"
+            exit 1
+          fi
+          echo "fwplus=${fwplus}" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: check-version
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        # Keep in sync with HYDRA / ESP32S3 / NRF52 in bin/fwplus_pack_release.py.
+        env:
+          - hydra
+          - hydra_psram
+          - hydraE22P
+          - hydraE22P_psram
+          - nrf52_promicro_diy_tcxo
+          - seeed_xiao_nrf52840_kit
+          - seeed-xiao-s3
+          - heltec-wsl-v3
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TAG }}
+          submodules: recursive
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v6
+        with:
+          path: ~/.platformio
+          key: pio-${{ matrix.env }}-${{ hashFiles('platformio.ini', 'variants/**/platformio.ini', 'variants/**/*.ini') }}
+          restore-keys: pio-${{ matrix.env }}-
+
+      - name: Install PlatformIO
+        run: pip install -U platformio
+
+      # The first ESP32 build after a cache miss can lose a race while fetching IDF components; one retry covers it.
+      - name: Build ${{ matrix.env }}
+        run: pio run -e "${{ matrix.env }}" || pio run -e "${{ matrix.env }}"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.env }}
+          path: |
+            .pio/build/${{ matrix.env }}/firmware-*.bin
+            .pio/build/${{ matrix.env }}/firmware-*.elf
+            .pio/build/${{ matrix.env }}/firmware-*.uf2
+            .pio/build/${{ matrix.env }}/firmware-*.zip
+          retention-days: 3
+          if-no-files-found: error
+
+  release:
+    needs: [check-version, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TAG }}
+
+      # One artifact per env, unpacked to build/<env>/ — the layout fwplus_pack_release.py reads.
+      - uses: actions/download-artifact@v8
+        with:
+          path: build
+
+      - name: Pack the release files
+        run: python3 bin/fwplus_pack_release.py build release "${{ needs.check-version.outputs.fwplus }}"
+
+      - name: Create the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload "$TAG" release/* --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" release/* --repo "$GITHUB_REPOSITORY" --draft --verify-tag \
+              --title "firmware+ build ${{ needs.check-version.outputs.fwplus }} (${TAG#v})" \
+              --notes "Built by GitHub Actions from $TAG. Replace this text with the release notes before publishing."
+          fi

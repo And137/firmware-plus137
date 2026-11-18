@@ -90,6 +90,7 @@ Values marked `USERPREFS_*` are applied on the first boot after a clean flash or
 
 Full change log: [HYDRA.md](HYDRA.md).
 
+- **Build 1373 (2026-11-18):** OnDemand node list limited to the 10 most recently heard nodes in one packet (direct neighbours list unchanged), release builds in GitHub Actions.
 - **Build 1372 (2026-11-18):** new build for Heltec WSL V3 (`HeW`), board suffixes in the version (`Hy`, `HyR`, `HyP`, `HyPR`, `nF`, `Xn`, `Xs`), OnDemand noise floor history (10 averages of 20 samples, request type 26).
 - **Build 1371 (2026-11-17):** new numbering `2.8.3.137<build>`, compatibility with the new FW+ app (`wifi_power` / `bt_power` moved to fields 200/201, Broadcast Assist over admin), BLE kept up on routers, new builds for nRF52 Pro-micro, Xiao nRF52840 Kit and Xiao ESP32-S3; board suffixes (`Hy`, `nF`, `Xn`, `Xs`) start with build 1372.
 - **Build 40 (2026-11-16):** Bluetooth crash fix (full newlib), atomic NodeDB save, `hydra_psram` environment, no user button on GPIO39.

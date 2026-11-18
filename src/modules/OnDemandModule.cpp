@@ -23,6 +23,8 @@ OnDemandModule *onDemandModule;
 static const int MAX_NODES_PER_PACKET = 10;
 static const int MAX_PACKET_SIZE = 190;
 #define NUM_ONLINE_SECS (60 * 60 * 2) 
+// fw+ 1373: REQUEST_NODES_ONLINE returns only the most recently heard nodes, in one packet
+#define NUM_RECENT_NODES 10
 #define MAGIC_USB_BATTERY_LEVEL 101
 
 int32_t OnDemandModule::runOnce()
@@ -70,7 +72,7 @@ bool OnDemandModule::handleReceivedProtobuf(const meshtastic_MeshPacket &mp, mes
                 break;
             }
             case meshtastic_OnDemandType_REQUEST_NODES_ONLINE: {
-                auto packets = createSegmentedNodeList(false);
+                auto packets = createRecentNodeList();
                 for (auto &pkt : packets)
                 {
                     sendPacketToRequester(*pkt, mp);
@@ -152,6 +154,89 @@ uint32_t OnDemandModule::sinceLastSeen(const meshtastic_NodeInfoLite *n)
     return delta;
 }
 
+void OnDemandModule::fillNodeEntry(const meshtastic_NodeInfoLite *node, meshtastic_NodeEntry &entry)
+{
+    entry.node_id = node->num;
+    entry.last_heard = sinceLastSeen(node);
+    entry.snr = 0;
+    entry.hops = node->hops_away;
+
+    if (node->hops_away == 0) {
+        entry.snr = node->snr;
+    }
+    // hydra: RSSI only for direct neighbours (NodeDB keeps last_rssi at 0 for relayed nodes); 0 = unknown
+    entry.rx_rssi = (node->has_hops_away && node->hops_away == 0) ? node->last_rssi : 0;
+
+    strncpy(entry.long_name, node->long_name, sizeof(entry.long_name) - 1);
+    strncpy(entry.short_name, node->short_name, sizeof(entry.short_name) - 1);
+
+    // Populate optional integer latitude/longitude if available
+    meshtastic_PositionLite nodePos = meshtastic_PositionLite_init_zero;
+    if (nodeDB->hasValidPosition(node) && nodeDB->copyNodePosition(node->num, nodePos)) {
+        entry.has_latitude_i = true;
+        entry.latitude_i = nodePos.latitude_i;
+        entry.has_longitude_i = true;
+        entry.longitude_i = nodePos.longitude_i;
+    }
+}
+
+// fw+ 1373: the full 2 h list went out as many packets on a large mesh for every request. Now the NUM_RECENT_NODES most
+// recently heard nodes (within the same 2 h window, never our own node), newest first, in a single packet
+// (packet_total = 1). Same request/response types, so older apps keep working.
+std::vector<std::unique_ptr<meshtastic_OnDemand>> OnDemandModule::createRecentNodeList()
+{
+    // Keep the NUM_RECENT_NODES freshest nodes in a small array ordered by age (insertion), instead of collecting and
+    // sorting every node: no heap, and much less code on the nRF52 boards whose flash is nearly full.
+    uint32_t recentAge[NUM_RECENT_NODES];
+    int recentIndex[NUM_RECENT_NODES];
+    size_t keep = 0;
+    int totalNodes = nodeDB->getNumMeshNodes();
+    for (int i = 0; i < totalNodes; i++) {
+        meshtastic_NodeInfoLite *node = nodeDB->getMeshNodeByIndex(i);
+        if (!node || node->num == myNodeInfo.my_node_num)
+            continue;
+        uint32_t age = sinceLastSeen(node);
+        if (age >= NUM_ONLINE_SECS || (keep == NUM_RECENT_NODES && age >= recentAge[keep - 1]))
+            continue;
+        size_t pos = (keep < NUM_RECENT_NODES) ? keep++ : keep - 1; // drop the oldest when full
+        while (pos > 0 && recentAge[pos - 1] > age) {
+            recentAge[pos] = recentAge[pos - 1];
+            recentIndex[pos] = recentIndex[pos - 1];
+            pos--;
+        }
+        recentAge[pos] = age;
+        recentIndex[pos] = i;
+    }
+
+    std::unique_ptr<meshtastic_OnDemand> onDemand(new meshtastic_OnDemand);
+    *onDemand = meshtastic_OnDemand_init_zero;
+    onDemand->which_variant = meshtastic_OnDemand_response_tag;
+    onDemand->variant.response.response_type = meshtastic_OnDemandType_RESPONSE_NODES_ONLINE;
+    onDemand->variant.response.which_response_data = meshtastic_OnDemandResponse_node_list_tag;
+    onDemand->has_packet_index = true;
+    onDemand->packet_index = 1;
+    onDemand->has_packet_total = true;
+    onDemand->packet_total = 1;
+
+    meshtastic_NodesList &listRef = onDemand->variant.response.response_data.node_list;
+    listRef.node_list_count = 0;
+    const size_t cap = sizeof(listRef.node_list) / sizeof(listRef.node_list[0]);
+    for (size_t i = 0; i < keep && listRef.node_list_count < (pb_size_t)cap; i++) {
+        meshtastic_NodeEntry entry = meshtastic_NodeEntry_init_zero;
+        fillNodeEntry(nodeDB->getMeshNodeByIndex(recentIndex[i]), entry);
+        listRef.node_list[listRef.node_list_count++] = entry;
+        // long names and positions can overflow one packet before 10 entries: keep what fits
+        if (!fitsInPacket(*onDemand, MAX_PACKET_SIZE)) {
+            listRef.node_list_count--;
+            break;
+        }
+    }
+
+    std::vector<std::unique_ptr<meshtastic_OnDemand>> packets;
+    packets.push_back(std::move(onDemand));
+    return packets;
+}
+
 std::vector<std::unique_ptr<meshtastic_OnDemand>> OnDemandModule::createSegmentedNodeList(bool directOnly)
 {
     std::vector<std::unique_ptr<meshtastic_OnDemand>> packets;
@@ -199,28 +284,7 @@ std::vector<std::unique_ptr<meshtastic_OnDemand>> OnDemandModule::createSegmente
                 continue;
              }
                
-            entry.node_id = node->num;
-            entry.last_heard = sinceLastSeen(node);
-            entry.snr = 0;
-            entry.hops = node->hops_away;
-
-            if(node->hops_away==0){
-                entry.snr = node->snr;
-            }
-            // hydra: RSSI only for direct neighbours (NodeDB keeps last_rssi at 0 for relayed nodes); 0 = unknown
-            entry.rx_rssi = (node->has_hops_away && node->hops_away == 0) ? node->last_rssi : 0;
-            
-            strncpy(entry.long_name, node->long_name, sizeof(entry.long_name) - 1);
-            strncpy(entry.short_name, node->short_name, sizeof(entry.short_name) - 1);
-
-            // Populate optional integer latitude/longitude if available
-            meshtastic_PositionLite nodePos = meshtastic_PositionLite_init_zero;
-            if (nodeDB->hasValidPosition(node) && nodeDB->copyNodePosition(node->num, nodePos)) {
-                entry.has_latitude_i = true;
-                entry.latitude_i = nodePos.latitude_i;
-                entry.has_longitude_i = true;
-                entry.longitude_i = nodePos.longitude_i;
-            }
+            fillNodeEntry(node, entry);
 
             // capacity guard for nanopb repeated field
             const size_t cap = sizeof(listRef.node_list) / sizeof(listRef.node_list[0]);
