@@ -13,27 +13,28 @@ Build environments:
 
 | Environment | Board | Suffix in 1371 | Suffix from 1372 |
 | ----------- | ----- | -------------- | ---------------- |
-| `hydra` | Meshtastic DIY v1 Hydra, ESP32 without PSRAM, standard E22 (hardware model `HYDRA`) | none | `hy` |
-| `hydra_psram` | Hydra on an ESP32-WROVER with PSRAM, standard E22 (up to 1000 nodes) | `R` | `hyR` |
-| `hydraE22P` | Hydra, ESP32 without PSRAM, E22P module | `P` | `hyP` |
-| `hydraE22P_psram` | Freenove ESP32-WROVER with PSRAM, E22P module (up to 1000 nodes) | `PR` | `hyPR` |
+| `hydra` | Meshtastic DIY v1 Hydra, ESP32 without PSRAM, standard E22 (hardware model `HYDRA`) | none | `Hy` |
+| `hydra_psram` | Hydra on an ESP32-WROVER with PSRAM, standard E22 (up to 1000 nodes) | `R` | `HyR` |
+| `hydraE22P` | Hydra, ESP32 without PSRAM, E22P module | `P` | `HyP` |
+| `hydraE22P_psram` | Freenove ESP32-WROVER with PSRAM, E22P module (up to 1000 nodes) | `PR` | `HyPR` |
 | `nrf52_promicro_diy_tcxo` | nRF52840 Pro-micro DIY with an E22 / HT-RA62 module (TCXO) | none | `nF` |
 | `seeed_xiao_nrf52840_kit` | Seeed Xiao nRF52840 Kit (Wio-SX1262) | none | `Xn` |
 | `seeed-xiao-s3` | Seeed Xiao ESP32-S3 (Wio-SX1262, 8 MB flash, PSRAM) | none | `Xs` |
+| `heltec-wsl-v3` | Heltec Wireless Stick Lite V3 (ESP32-S3, SX1262, 8 MB flash) | - | `HeW` |
 
 Tested on hardware: the Hydra variants. The nRF52 Pro-micro build was checked on the bench (boots, Bluetooth,
-configuration) without a radio module. The Xiao builds are not tested yet.
+configuration) without a radio module. The Xiao and Heltec WSL V3 builds are not tested yet.
+Builds for Heltec V3 (`He3`) and Heltec V4 (`He4`) will follow in an upcoming release.
 
 > [!NOTE]
-> **New version suffixes from the next release (build 1372).** Every build will name its board at the end of the
-> version: Hydra `hy` (`2.8.3.1372hy`, `hyR`, `hyP`, `hyPR`), Pro-micro `nF`, Xiao nRF52840 `Xn`, Xiao ESP32-S3 `Xs`.
-> `P` (E22P module) and `R` (PSRAM) keep their meaning. Release 1371 still uses the old form (`2.8.3.1371`, `R`,
-> `P`, `PR`).
+> **Version suffixes from build 1372.** Every build names its board at the end of the version: Hydra `Hy`
+> (`2.8.3.1372Hy`, `HyR`, `HyP`, `HyPR`), Pro-micro `nF`, Xiao nRF52840 `Xn`, Xiao ESP32-S3 `Xs`. `P` (E22P module)
+> and `R` (PSRAM) keep their meaning. Release 1371 used the old form (`2.8.3.1371`, `R`, `P`, `PR`).
 
 > [!WARNING]
-> **Never flash an E22P build (`hydraE22P`, `hydraE22P_psram`, version suffix `P` / `PR`, from build 1372 `hyP` / `hyPR`) onto a board with a standard E22 module.**
+> **Never flash an E22P build (`hydraE22P`, `hydraE22P_psram`, version suffix `P` / `PR`, from build 1372 `HyP` / `HyPR`) onto a board with a standard E22 module.**
 > It damages the radio. Match the build to the module on the board: standard E22 -> `hydra` or `hydra_psram`
-> (none / `R`, later `hy` / `hyR`), E22P -> `hydraE22P` or `hydraE22P_psram` (`P` / `PR`, later `hyP` / `hyPR`). The suffix is the last part of the
+> (none / `R`, later `Hy` / `HyR`), E22P -> `hydraE22P` or `hydraE22P_psram` (`P` / `PR`, later `HyP` / `HyPR`). The suffix is the last part of the
 > firmware version shown in the app, so check it before updating over OTA as well.
 
 > [!CAUTION]
@@ -49,16 +50,16 @@ Based on upstream `develop` from 2026-11-02.
 
 ## Version string
 
-`2.8.3.137<build><suffix>`, for example `2.8.3.1371PR` for build 1. The build number comes from `hydra_build.txt`
+`2.8.3.137<build><suffix>`, for example `2.8.3.1372HyPR` for build 2. The build number comes from `hydra_build.txt`
 and is shared by every environment; the firmware-plus137 numbering restarted at 1 (builds up to 40 used
 `2.8.3.<build><suffix>`). The same `137<build>` number is the FW+ version reported over OnDemand. The suffix
-marks the board (see the table above). From build 1372 every board has one: Hydra `hy`, plus `P` for the E22P
-module and `R` for PSRAM; `nF` = Pro-micro, `Xn` = Xiao nRF52840, `Xs` = Xiao ESP32-S3. In build 1371 only the
-Hydra PSRAM / E22P builds have a suffix (`R`, `P`, `PR`).
+marks the board (see the table above): Hydra `Hy`, plus `P` for the E22P module and `R` for PSRAM; `nF` =
+Pro-micro, `Xn` = Xiao nRF52840, `Xs` = Xiao ESP32-S3. In build 1371 only the Hydra PSRAM / E22P builds had a
+suffix (`R`, `P`, `PR`).
 
 ## Flashing
 
-- **Hydra and Xiao ESP32-S3:** flash `firmware-<env>-<version>.factory.bin` at offset `0x0` with esptool.
+- **Hydra, Xiao ESP32-S3 and Heltec WSL V3:** flash `firmware-<env>-<version>.factory.bin` at offset `0x0` with esptool.
 - **nRF52 (Pro-micro, Xiao nRF52840):** double-tap reset to open the UF2 bootloader drive, then copy
   `firmware-<env>-<version>.uf2` onto it. The `.zip` is for DFU updates over USB or Bluetooth.
 
@@ -89,7 +90,8 @@ Values marked `USERPREFS_*` are applied on the first boot after a clean flash or
 
 Full change log: [HYDRA.md](HYDRA.md).
 
-- **Build 1371 (2026-11-17):** new numbering `2.8.3.137<build>`, compatibility with the new FW+ app (`wifi_power` / `bt_power` moved to fields 200/201, Broadcast Assist over admin), BLE kept up on routers, new builds for nRF52 Pro-micro, Xiao nRF52840 Kit and Xiao ESP32-S3; board suffixes (`hy`, `nF`, `Xn`, `Xs`) start with build 1372.
+- **Build 1372 (2026-11-18):** new build for Heltec WSL V3 (`HeW`), board suffixes in the version (`Hy`, `HyR`, `HyP`, `HyPR`, `nF`, `Xn`, `Xs`), OnDemand noise floor history (10 averages of 20 samples, request type 26).
+- **Build 1371 (2026-11-17):** new numbering `2.8.3.137<build>`, compatibility with the new FW+ app (`wifi_power` / `bt_power` moved to fields 200/201, Broadcast Assist over admin), BLE kept up on routers, new builds for nRF52 Pro-micro, Xiao nRF52840 Kit and Xiao ESP32-S3; board suffixes (`Hy`, `nF`, `Xn`, `Xs`) start with build 1372.
 - **Build 40 (2026-11-16):** Bluetooth crash fix (full newlib), atomic NodeDB save, `hydra_psram` environment, no user button on GPIO39.
 - **Build 39 (2026-11-15):** shared `[hydra_userprefs]`, bundled OTA loader, admin keys in base64, version `2.8.3.39P/PR`, traceroute limit 10 s, Bluetooth stability fixes.
 - **Build 38 (2026-11-07):** NodeMod, SignalReply, noise floor in OnDemand, `wifi_power` / `bt_power` LoRa fields, admin origin gate.

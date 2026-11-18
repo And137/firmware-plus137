@@ -383,12 +383,22 @@ void RadioLibInterface::updateNoiseFloor()
     noiseFloorSamples[currentSampleIndex] = (int32_t)rssi;
     currentSampleIndex++;
 
-    if (currentSampleIndex >= NOISE_FLOOR_SAMPLES) {
+    const bool windowComplete = currentSampleIndex >= NOISE_FLOOR_SAMPLES;
+    if (windowComplete) {
         currentSampleIndex = 0;
         isNoiseFloorBufferFull = true;
     }
 
     currentNoiseFloor = getAverageNoiseFloorInternal();
+
+    if (windowComplete) {
+        // fw+: all 20 slots now hold fresh samples, so successive history entries never share one
+        noiseFloorHistory[noiseFloorHistoryHead] = (int8_t)currentNoiseFloor;
+        noiseFloorHistoryMs[noiseFloorHistoryHead] = Time::getMillis();
+        noiseFloorHistoryHead = (noiseFloorHistoryHead + 1) % NOISE_FLOOR_HISTORY_LEN;
+        if (noiseFloorHistoryCount < NOISE_FLOOR_HISTORY_LEN)
+            noiseFloorHistoryCount++;
+    }
 
     LOG_TRACE("Noise floor: %d dBm (samples: %d, latest: %d dBm)", currentNoiseFloor, getNoiseFloorSampleCountInternal(), rssi);
 }
@@ -440,6 +450,18 @@ void RadioLibInterface::resetNoiseFloor()
     isNoiseFloorBufferFull = false;
     currentNoiseFloor = NOISE_FLOOR_DEFAULT;
     LOG_DEBUG_RADIO("Noise floor reset - rolling window will restart");
+}
+
+uint8_t RadioLibInterface::getNoiseFloorHistory(int32_t *dbm, uint32_t *ageSecs, uint8_t maxCount) const
+{
+    const uint8_t n = noiseFloorHistoryCount < maxCount ? noiseFloorHistoryCount : maxCount;
+    const uint32_t now = Time::getMillis();
+    for (uint8_t i = 0; i < n; i++) {
+        const uint8_t slot = (noiseFloorHistoryHead + NOISE_FLOOR_HISTORY_LEN - 1 - i) % NOISE_FLOOR_HISTORY_LEN;
+        dbm[i] = noiseFloorHistory[slot];
+        ageSecs[i] = (now - noiseFloorHistoryMs[slot]) / 1000;
+    }
+    return n;
 }
 
 bool RadioLibInterface::randomBytes(uint8_t *buffer, size_t length)

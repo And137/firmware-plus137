@@ -348,17 +348,35 @@ Import("projenv")
 
 prefsLoc = projenv["PROJECT_DIR"] + "/version.properties"
 
-# hydra: version suffix from the env's build_flags: "P" = E22P module (USE_EBYTE_E22P),
-# "R" = PSRAM (BOARD_HAS_PSRAM), both = "PR". Plain Hydra gets none ("2.8.3.39").
+# hydra: version suffix "Hy" plus flags from the env's build_flags: "P" = E22P module (USE_EBYTE_E22P),
+# "R" = PSRAM (BOARD_HAS_PSRAM): "2.8.3.1372Hy", "HyP", "HyR", "HyPR".
 def hydra_version_suffix():
     flags = env.GetProjectOption("build_flags", [])
     flags = flags if isinstance(flags, str) else " ".join(flags)
     e22p = "USE_EBYTE_E22P" in flags
     psram = "BOARD_HAS_PSRAM" in flags
-    return ("P" if e22p else "") + ("R" if psram else "")
+    return "Hy" + ("P" if e22p else "") + ("R" if psram else "")
 
 
-verObj = readProps(prefsLoc, hydra_version_suffix() if env.get("PIOENV", "").lower().startswith("hydra") else "")
+# fw+: version suffix for the other boards built in this fork ("2.8.3.1372Xn")
+BOARD_VERSION_SUFFIX = {
+    "nrf52_promicro_diy_tcxo": "nF",
+    "seeed_xiao_nrf52840_kit": "Xn",
+    "seeed-xiao-s3": "Xs",
+    "heltec-wsl-v3": "HeW",
+    "heltec-v3": "He3",
+    "heltec-v4": "He4",
+}
+
+
+def version_suffix():
+    pioenv = env.get("PIOENV", "")
+    if pioenv.lower().startswith("hydra"):
+        return hydra_version_suffix()
+    return BOARD_VERSION_SUFFIX.get(pioenv, "")
+
+
+verObj = readProps(prefsLoc, version_suffix())
 print(f"Using meshtastic platformio-custom.py, firmware version {verObj['long']} on {env.get('PIOENV')}")
 
 # get repository owner if git is installed

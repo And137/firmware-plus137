@@ -1,7 +1,7 @@
 # firmware+ for Meshtastic routers (Meshtastic develop 2.8.3)
 
 Fork of the Meshtastic firmware `develop` branch for router nodes.
-Build environments: `hydra`, `hydra_psram` (standard E22, ESP32-WROVER with PSRAM), `hydraE22P` (no PSRAM), `hydraE22P_psram` (Freenove ESP32-WROVER, up to 1000 nodes), `nrf52_promicro_diy_tcxo` (nRF52840 Pro-micro DIY), `seeed_xiao_nrf52840_kit` and `seeed-xiao-s3`.
+Build environments: `hydra`, `hydra_psram` (standard E22, ESP32-WROVER with PSRAM), `hydraE22P` (no PSRAM), `hydraE22P_psram` (Freenove ESP32-WROVER, up to 1000 nodes), `nrf52_promicro_diy_tcxo` (nRF52840 Pro-micro DIY), `seeed_xiao_nrf52840_kit`, `seeed-xiao-s3` and `heltec-wsl-v3`.
 
 Main additions over upstream: node statistics on demand (OnDemand), telemetry and position limiters,
 opportunistic flooding, NodeMod / SignalReply, Wi-Fi and Bluetooth TX power settings, and extra
@@ -10,8 +10,13 @@ Based on upstream `develop` from 2026-11-02.
 
 ## Change log
 
+### Build 1372 (2026-11-18)
+- New build: `heltec-wsl-v3` (Heltec Wireless Stick Lite V3).
+- Version suffix names the board: `2.8.3.1372Hy` / `HyR` / `HyP` / `HyPR` (Hydra), `nF` (Pro-micro), `Xn` (Xiao nRF52840), `Xs` (Xiao ESP32-S3), `HeW` (Heltec WSL V3). `He3` (Heltec V3) and `He4` (Heltec V4) are reserved for upcoming builds.
+- OnDemand noise floor history: `REQUEST_NOISE_FLOOR_HISTORY` (26) returns `NoiseFloorHistory` (`OnDemandResponse` field 13) with up to 10 averages of 20 consecutive RSSI samples, newest first, each with its age in seconds. Types 26/27 and field 13 are taken over from the dropped DTN overlay. The current value stays in `NodeStats.noise_floor`.
+
 ### Build 1371 (2026-11-17)
-- New builds: `nrf52_promicro_diy_tcxo` (nRF52840 Pro-micro DIY), `seeed_xiao_nrf52840_kit` and `seeed-xiao-s3`. From build 1372 version suffixes are `hy` / `hyP` / `hyR` / `hyPR` (Hydra), `nF`, `Xn` and `Xs`. OnDemand node stats and extended local stats report filesystem usage on nRF52 (littlefs block count); before, nRF52 builds did not compile.
+- New builds: `nrf52_promicro_diy_tcxo` (nRF52840 Pro-micro DIY), `seeed_xiao_nrf52840_kit` and `seeed-xiao-s3`. From build 1372 version suffixes are `Hy` / `HyP` / `HyR` / `HyPR` (Hydra), `nF`, `Xn` and `Xs`. OnDemand node stats and extended local stats report filesystem usage on nRF52 (littlefs block count); before, nRF52 builds did not compile.
 - New numbering: version `2.8.3.137<build><suffix>` and FW+ version `137<build>`, counter restarted at 1 (`2.8.3.1371PR`, FW+ version 1371).
 - `LoRaConfig.wifi_power` / `bt_power` renumbered 108/109 -> 200/201: field 108 collides with upstream `LoRaConfig.transparent_mode`, which current Meshtastic apps decode as a bool. Saved values from earlier builds reset to defaults once.
 - Broadcast Assist config readable and writable over admin (`BROADCAST_ASSIST_CONFIG` get, `broadcast_assist` set, applied without reboot).

@@ -20,3 +20,7 @@
 *BroadcastAssistStats.suppressed_degree int_size:16
 *BroadcastAssistStats.suppressed_airtime int_size:16
 *BroadcastAssistStats.last_reflood_age_secs int_size:16
+
+# fw+ noise floor history
+*NoiseFloorHistory.noise_floor max_count:10 int_size:8
+*NoiseFloorHistory.age_secs max_count:10

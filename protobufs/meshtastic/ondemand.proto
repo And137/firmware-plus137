@@ -149,6 +149,9 @@ enum OnDemandType {
     REQUEST_NODES_DIRECT_ONLINE = 23;
     REQUEST_ROUTING_TABLE = 24;
     RESPONSE_ROUTING_TABLE = 25;
+    // fw+ noise floor history (numbers taken over from the dropped DTN overlay)
+    REQUEST_NOISE_FLOOR_HISTORY = 26;
+    RESPONSE_NOISE_FLOOR_HISTORY = 27;
     // fw+ Broadcast Assist stats
     REQUEST_BROADCAST_ASSIST_STATS = 28;
     RESPONSE_BROADCAST_ASSIST_STATS = 29;
@@ -172,6 +175,7 @@ message OnDemandResponse {
         FwPlusVersion fw_plus_version=10;
         RoutingErrorsHistory routing_errors=11;
         RoutingTable routing_table=12;
+        NoiseFloorHistory noise_floor_history=13;
         // fw+ Broadcast Assist stats response
         BroadcastAssistStats broadcast_assist_stats=14;
     }
@@ -221,4 +225,12 @@ message BroadcastAssistStats {
     optional uint32 suppressed_airtime = 6;
     // Age in seconds since the last reflood was sent (0 if none yet)
     optional uint32 last_reflood_age_secs = 7;
+}
+
+// fw+ noise floor history: averages of 20 consecutive RSSI samples, newest first
+message NoiseFloorHistory {
+    // average noise floor in dBm
+    repeated sint32 noise_floor = 1;
+    // seconds since each average was taken
+    repeated uint32 age_secs = 2;
 }

@@ -37,6 +37,9 @@ typedef enum _meshtastic_OnDemandType {
     meshtastic_OnDemandType_REQUEST_NODES_DIRECT_ONLINE = 23,
     meshtastic_OnDemandType_REQUEST_ROUTING_TABLE = 24,
     meshtastic_OnDemandType_RESPONSE_ROUTING_TABLE = 25,
+    /* fw+ noise floor history (numbers taken over from the dropped DTN overlay) */
+    meshtastic_OnDemandType_REQUEST_NOISE_FLOOR_HISTORY = 26,
+    meshtastic_OnDemandType_RESPONSE_NOISE_FLOOR_HISTORY = 27,
     /* fw+ Broadcast Assist stats */
     meshtastic_OnDemandType_REQUEST_BROADCAST_ASSIST_STATS = 28,
     meshtastic_OnDemandType_RESPONSE_BROADCAST_ASSIST_STATS = 29
@@ -258,6 +261,16 @@ typedef struct _meshtastic_BroadcastAssistStats {
     uint16_t last_reflood_age_secs;
 } meshtastic_BroadcastAssistStats;
 
+/* fw+ noise floor history: averages of 20 consecutive RSSI samples, newest first */
+typedef struct _meshtastic_NoiseFloorHistory {
+    /* average noise floor in dBm */
+    pb_size_t noise_floor_count;
+    int8_t noise_floor[10];
+    /* seconds since each average was taken */
+    pb_size_t age_secs_count;
+    uint32_t age_secs[10];
+} meshtastic_NoiseFloorHistory;
+
 typedef struct _meshtastic_OnDemandResponse {
     meshtastic_OnDemandType response_type;
     pb_size_t which_response_data;
@@ -273,6 +286,7 @@ typedef struct _meshtastic_OnDemandResponse {
         meshtastic_FwPlusVersion fw_plus_version;
         meshtastic_RoutingErrorsHistory routing_errors;
         meshtastic_RoutingTable routing_table;
+        meshtastic_NoiseFloorHistory noise_floor_history;
         /* fw+ Broadcast Assist stats response */
         meshtastic_BroadcastAssistStats broadcast_assist_stats;
     } response_data;
@@ -329,6 +343,7 @@ extern "C" {
 
 
 
+
 /* Initializer values for message structs */
 #define meshtastic_FwPlusVersion_init_default    {0}
 #define meshtastic_NodeStats_init_default        {false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, "", false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0}
@@ -351,6 +366,7 @@ extern "C" {
 #define meshtastic_RoutingTableEntry_init_default {0, 0, 0, 0, 0, _meshtastic_RouteSource_MIN}
 #define meshtastic_RoutingTable_init_default     {0, {meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default, meshtastic_RoutingTableEntry_init_default}}
 #define meshtastic_BroadcastAssistStats_init_default {false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0}
+#define meshtastic_NoiseFloorHistory_init_default {0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
 #define meshtastic_FwPlusVersion_init_zero       {0}
 #define meshtastic_NodeStats_init_zero           {false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, "", false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0}
 #define meshtastic_RxPacketHistory_init_zero     {0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
@@ -372,6 +388,7 @@ extern "C" {
 #define meshtastic_RoutingTableEntry_init_zero   {0, 0, 0, 0, 0, _meshtastic_RouteSource_MIN}
 #define meshtastic_RoutingTable_init_zero        {0, {meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero, meshtastic_RoutingTableEntry_init_zero}}
 #define meshtastic_BroadcastAssistStats_init_zero {false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0}
+#define meshtastic_NoiseFloorHistory_init_zero   {0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define meshtastic_FwPlusVersion_version_number_tag 1
@@ -458,6 +475,8 @@ extern "C" {
 #define meshtastic_BroadcastAssistStats_suppressed_degree_tag 5
 #define meshtastic_BroadcastAssistStats_suppressed_airtime_tag 6
 #define meshtastic_BroadcastAssistStats_last_reflood_age_secs_tag 7
+#define meshtastic_NoiseFloorHistory_noise_floor_tag 1
+#define meshtastic_NoiseFloorHistory_age_secs_tag 2
 #define meshtastic_OnDemandResponse_response_type_tag 1
 #define meshtastic_OnDemandResponse_rx_packet_history_tag 2
 #define meshtastic_OnDemandResponse_node_list_tag 3
@@ -470,6 +489,7 @@ extern "C" {
 #define meshtastic_OnDemandResponse_fw_plus_version_tag 10
 #define meshtastic_OnDemandResponse_routing_errors_tag 11
 #define meshtastic_OnDemandResponse_routing_table_tag 12
+#define meshtastic_OnDemandResponse_noise_floor_history_tag 13
 #define meshtastic_OnDemandResponse_broadcast_assist_stats_tag 14
 #define meshtastic_OnDemand_packet_index_tag     1
 #define meshtastic_OnDemand_packet_total_tag     2
@@ -629,6 +649,7 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (response_data,node_stats,response_data.node_
 X(a, STATIC,   ONEOF,    MESSAGE,  (response_data,fw_plus_version,response_data.fw_plus_version),  10) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (response_data,routing_errors,response_data.routing_errors),  11) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (response_data,routing_table,response_data.routing_table),  12) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (response_data,noise_floor_history,response_data.noise_floor_history),  13) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (response_data,broadcast_assist_stats,response_data.broadcast_assist_stats),  14)
 #define meshtastic_OnDemandResponse_CALLBACK NULL
 #define meshtastic_OnDemandResponse_DEFAULT NULL
@@ -643,6 +664,7 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (response_data,broadcast_assist_stats,respons
 #define meshtastic_OnDemandResponse_response_data_fw_plus_version_MSGTYPE meshtastic_FwPlusVersion
 #define meshtastic_OnDemandResponse_response_data_routing_errors_MSGTYPE meshtastic_RoutingErrorsHistory
 #define meshtastic_OnDemandResponse_response_data_routing_table_MSGTYPE meshtastic_RoutingTable
+#define meshtastic_OnDemandResponse_response_data_noise_floor_history_MSGTYPE meshtastic_NoiseFloorHistory
 #define meshtastic_OnDemandResponse_response_data_broadcast_assist_stats_MSGTYPE meshtastic_BroadcastAssistStats
 
 #define meshtastic_OnDemand_FIELDLIST(X, a) \
@@ -682,6 +704,12 @@ X(a, STATIC,   OPTIONAL, UINT32,   last_reflood_age_secs,   7)
 #define meshtastic_BroadcastAssistStats_CALLBACK NULL
 #define meshtastic_BroadcastAssistStats_DEFAULT NULL
 
+#define meshtastic_NoiseFloorHistory_FIELDLIST(X, a) \
+X(a, STATIC,   REPEATED, SINT32,   noise_floor,       1) \
+X(a, STATIC,   REPEATED, UINT32,   age_secs,          2)
+#define meshtastic_NoiseFloorHistory_CALLBACK NULL
+#define meshtastic_NoiseFloorHistory_DEFAULT NULL
+
 extern const pb_msgdesc_t meshtastic_FwPlusVersion_msg;
 extern const pb_msgdesc_t meshtastic_NodeStats_msg;
 extern const pb_msgdesc_t meshtastic_RxPacketHistory_msg;
@@ -703,6 +731,7 @@ extern const pb_msgdesc_t meshtastic_OnDemand_msg;
 extern const pb_msgdesc_t meshtastic_RoutingTableEntry_msg;
 extern const pb_msgdesc_t meshtastic_RoutingTable_msg;
 extern const pb_msgdesc_t meshtastic_BroadcastAssistStats_msg;
+extern const pb_msgdesc_t meshtastic_NoiseFloorHistory_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
 #define meshtastic_FwPlusVersion_fields &meshtastic_FwPlusVersion_msg
@@ -726,6 +755,7 @@ extern const pb_msgdesc_t meshtastic_BroadcastAssistStats_msg;
 #define meshtastic_RoutingTableEntry_fields &meshtastic_RoutingTableEntry_msg
 #define meshtastic_RoutingTable_fields &meshtastic_RoutingTable_msg
 #define meshtastic_BroadcastAssistStats_fields &meshtastic_BroadcastAssistStats_msg
+#define meshtastic_NoiseFloorHistory_fields &meshtastic_NoiseFloorHistory_msg
 
 /* Maximum encoded size of messages (where known) */
 #define MESHTASTIC_MESHTASTIC_ONDEMAND_PB_H_MAX_SIZE meshtastic_OnDemand_size
@@ -738,6 +768,7 @@ extern const pb_msgdesc_t meshtastic_BroadcastAssistStats_msg;
 #define meshtastic_NodeEntry_size                90
 #define meshtastic_NodeStats_size                254
 #define meshtastic_NodesList_size                920
+#define meshtastic_NoiseFloorHistory_size        90
 #define meshtastic_OnDemandRequest_size          2
 #define meshtastic_OnDemandResponse_size         1325
 #define meshtastic_OnDemand_size                 1334

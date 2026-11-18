@@ -69,6 +69,9 @@ PB_BIND(meshtastic_RoutingTable, meshtastic_RoutingTable, 2)
 PB_BIND(meshtastic_BroadcastAssistStats, meshtastic_BroadcastAssistStats, AUTO)
 
 
+PB_BIND(meshtastic_NoiseFloorHistory, meshtastic_NoiseFloorHistory, AUTO)
+
+
 
 
 

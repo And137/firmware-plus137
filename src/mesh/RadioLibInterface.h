@@ -161,6 +161,12 @@ class RadioLibInterface : public RadioInterface, protected concurrency::Notified
     uint32_t lastNoiseFloorUpdate = 0;
     static const uint32_t NOISE_FLOOR_UPDATE_INTERVAL_MS = 5000;
     int32_t currentNoiseFloor = NOISE_FLOOR_DEFAULT;
+    /// fw+: one entry per 20 fresh samples, kept for the OnDemand noise floor history
+    static const uint8_t NOISE_FLOOR_HISTORY_LEN = 10;
+    int8_t noiseFloorHistory[NOISE_FLOOR_HISTORY_LEN];
+    uint32_t noiseFloorHistoryMs[NOISE_FLOOR_HISTORY_LEN];
+    uint8_t noiseFloorHistoryHead = 0; // next slot to write
+    uint8_t noiseFloorHistoryCount = 0;
 
     /**
      * Pure virtual hook for derived radio interfaces to provide instantaneous RSSI.
@@ -389,6 +395,9 @@ class RadioLibInterface : public RadioInterface, protected concurrency::Notified
      * Will automatically restart collection
      */
     void resetNoiseFloor();
+
+    /// fw+: copies the stored averages newest first; returns how many were written
+    uint8_t getNoiseFloorHistory(int32_t *dbm, uint32_t *ageSecs, uint8_t maxCount) const;
 
     /**
      * Request randomness sourced from the LoRa modem, if supported by the active RadioLib interface.

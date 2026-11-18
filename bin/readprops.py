@@ -6,8 +6,8 @@ build_location = os.getenv('BUILD_LOCATION', 'local')
 
 # hydra: local build counter, appended to the version as "-v<n>"
 HYDRA_BUILD_FILE = "hydra_build.txt"
-# hydra: version format "<major>.<minor>.<build>.137<hydra build>", e.g. "2.8.3.1371" for build 1; suffix P = E22P,
-# R = PSRAM, PR = both. 137 marks the firmware-plus137 line; the build counter restarted at 1 with it. The same
+# hydra: version format "<major>.<minor>.<build>.137<hydra build><board suffix>", e.g. "2.8.3.1372HyPR"; the suffix
+# comes from platformio-custom.py (Hy/HyP/HyR/HyPR Hydra, nF, Xn, Xs). 137 marks the firmware-plus137 line; the build counter restarted at 1 with it. The same
 # "137<build>" number is the FW+ version OnDemand reports (FW_PLUS_VERSION).
 HYDRA_SERIES = 137
 # Same shape as upstream "2.8.3.<sha>", so the apps parse it as 2.8.3.
@@ -24,7 +24,7 @@ def readHydraBuild(projectDir):
 def readProps(prefsLoc, buildSuffix=""):
     """Read the version of our project as a string
 
-    buildSuffix is appended to the hydra build number ("P" E22P, "R" PSRAM, "PR" both: "2.8.3.1371PR")."""
+    buildSuffix is appended to the hydra build number ("2.8.3.1372HyPR"; board suffixes in platformio-custom.py)."""
 
     config = configparser.RawConfigParser()
     config.read(prefsLoc)

@@ -54,6 +54,7 @@ class OnDemandModule : private concurrency::OSThread, public ProtobufModule<mesh
     meshtastic_OnDemand preparePingResponseAck(const meshtastic_MeshPacket &mp);
     //fw+ Broadcast Assist stats
     meshtastic_OnDemand prepareBroadcastAssistStats();
+    meshtastic_OnDemand prepareNoiseFloorHistory();
 
   private:
     uint32_t lastSentToMesh = 0;

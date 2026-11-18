@@ -109,6 +109,10 @@ bool OnDemandModule::handleReceivedProtobuf(const meshtastic_MeshPacket &mp, mes
                 sendPacketToRequester(prepareBroadcastAssistStats(), mp);
                 break;
             }
+            case meshtastic_OnDemandType_REQUEST_NOISE_FLOOR_HISTORY: {
+                sendPacketToRequester(prepareNoiseFloorHistory(), mp);
+                break;
+            }
             default:
                 meshtastic_OnDemand unknown_ondemand = meshtastic_OnDemand_init_zero;
                 unknown_ondemand.which_variant = meshtastic_OnDemand_response_tag;
@@ -371,8 +375,30 @@ meshtastic_OnDemand OnDemandModule::prepareBroadcastAssistStats()
     return onDemand;
 }
 
+meshtastic_OnDemand OnDemandModule::prepareNoiseFloorHistory()
+{
+    meshtastic_OnDemand onDemand = meshtastic_OnDemand_init_zero;
+    onDemand.which_variant = meshtastic_OnDemand_response_tag;
+    onDemand.variant.response.response_type = meshtastic_OnDemandType_RESPONSE_NOISE_FLOOR_HISTORY;
+    onDemand.variant.response.which_response_data = meshtastic_OnDemandResponse_noise_floor_history_tag;
+
+    auto &dst = onDemand.variant.response.response_data.noise_floor_history;
+    const uint8_t cap = sizeof(dst.noise_floor) / sizeof(dst.noise_floor[0]);
+    int32_t dbm[cap];
+    uint32_t ages[cap];
+    // no radio, or fewer than 20 samples so far: an empty list
+    const uint8_t n = RadioLibInterface::instance ? RadioLibInterface::instance->getNoiseFloorHistory(dbm, ages, cap) : 0;
+    for (uint8_t i = 0; i < n; i++) {
+        dst.noise_floor[i] = (int8_t)dbm[i];
+        dst.age_secs[i] = ages[i];
+    }
+    dst.noise_floor_count = n;
+    dst.age_secs_count = n;
+    return onDemand;
+}
+
 meshtastic_OnDemand OnDemandModule::prepareNodeStats()
-{   
+{
     refreshUptime();
     meshtastic_OnDemand onDemand = meshtastic_OnDemand_init_zero;
     onDemand.which_variant = meshtastic_OnDemand_response_tag;
