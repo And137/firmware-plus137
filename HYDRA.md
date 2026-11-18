@@ -11,6 +11,7 @@ Based on upstream `develop` from 2026-11-02.
 ## Change log
 
 ### Build 1373 (2026-11-18)
+- New builds: `heltec-v3` (Heltec WiFi LoRa 32 V3, `He3`) and `heltec-v4` (Heltec WiFi LoRa 32 V4, `He4`), added to the 1373 release afterwards (built from the tagged commit).
 - OnDemand `REQUEST_NODES_ONLINE` now answers with the 10 most recently heard nodes (within the last 2 hours, never the node itself), newest first, in a single packet (`packet_total` = 1). Before, every request sent all nodes heard in 2 hours as a series of packets, which loaded a large mesh. Request and response types are unchanged, so older apps still work; the Mesh+ 137 app labels the button "Nodes list (10 recent active)". `REQUEST_NODES_DIRECT_ONLINE` (direct neighbours) keeps the full segmented list.
 - Release builds run in GitHub Actions (`.github/workflows/fwplus_release.yml`): every release env in parallel, then `bin/fwplus_pack_release.py` checks the version in each image, packs the Hydra `-ota` / `-noota` images and writes `SHA256SUMS.txt`, and a draft release is created. The inherited upstream workflows are disabled in this repository.
 

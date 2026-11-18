@@ -15,6 +15,12 @@ on:
       tag:
         description: 'Existing tag to build, e.g. v2.8.3.1373'
         required: true
+      envs:
+        description: >-
+          Only these envs, as a JSON list (e.g. ["heltec-v3","heltec-v4"]), to add boards to a published release.
+          Builds and uploads them as artifacts only; no release is created or changed. Empty = full release.
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -55,15 +61,7 @@ jobs:
       fail-fast: false
       matrix:
         # Keep in sync with HYDRA / ESP32S3 / NRF52 in bin/fwplus_pack_release.py.
-        env:
-          - hydra
-          - hydra_psram
-          - hydraE22P
-          - hydraE22P_psram
-          - nrf52_promicro_diy_tcxo
-          - seeed_xiao_nrf52840_kit
-          - seeed-xiao-s3
-          - heltec-wsl-v3
+        env: ${{ fromJSON(inputs.envs || '["hydra", "hydra_psram", "hydraE22P", "hydraE22P_psram", "nrf52_promicro_diy_tcxo", "seeed_xiao_nrf52840_kit", "seeed-xiao-s3", "heltec-wsl-v3", "heltec-v3", "heltec-v4"]') }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -101,13 +99,14 @@ jobs:
 
   release:
     needs: [check-version, build]
+    if: inputs.envs == '' || inputs.envs == null
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
+      # The pack script comes from the commit that runs this workflow (the tag on a tag push, the branch on a manual
+      # run), so a fixed script can repack an older tag.
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ env.TAG }}
 
       # One artifact per env, unpacked to build/<env>/ — the layout fwplus_pack_release.py reads.
       - uses: actions/download-artifact@v8

@@ -21,7 +21,7 @@ SUF = {"hydra": "Hy", "hydra_psram": "HyR", "hydraE22P": "HyP", "hydraE22P_psram
        "seeed-xiao-s3": "Xs", "heltec-wsl-v3": "HeW", "heltec-v3": "He3", "heltec-v4": "He4",
        "nrf52_promicro_diy_tcxo": "nF", "seeed_xiao_nrf52840_kit": "Xn"}
 HYDRA = ["hydra", "hydra_psram", "hydraE22P", "hydraE22P_psram"]
-ESP32S3 = ["seeed-xiao-s3", "heltec-wsl-v3"]          # add "heltec-v3", "heltec-v4" when they ship
+ESP32S3 = ["seeed-xiao-s3", "heltec-wsl-v3", "heltec-v3", "heltec-v4"]
 NRF52 = ["nrf52_promicro_diy_tcxo", "seeed_xiao_nrf52840_kit"]
 OTA_1 = 0x260000
 os.makedirs(out, exist_ok=True)
