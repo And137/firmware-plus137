@@ -9,6 +9,8 @@ version.properties.
   at the end of the app; checks that only 0xFF lies between the app and 0x260000).
 - Other ESP32-S3 boards: factory.bin. nRF52: .uf2 and .zip.
 - File names carry the board suffix (PROGNAME does not), then SHA256SUMS.txt.
+- For updates from the Mesh+ 137 app, also the upstream-named files without the suffix: ESP32 app image
+  firmware-<env>-<version>.bin, nRF52 firmware-<env>-<version>-ota.zip (BLE DFU) and .uf2 (USB).
 Add a board: put its env and suffix in SUF and the env in the matching list below.
 """
 import configparser, glob, hashlib, os, re, sys
@@ -57,17 +59,23 @@ for env in HYDRA:
     assert fac[OTA_1:OTA_1 + 4] != b"\xff\xff\xff\xff", env + ": no OTA loader at 0x260000"
     open(os.path.join(out, f"firmware-{env}-{v}-ota.factory.bin"), "wb").write(fac)
     open(os.path.join(out, f"firmware-{env}-{v}-noota.factory.bin"), "wb").write(fac[:end])
+    copy(app, f"firmware-{env}-{BASE}.{B}.bin")   # OTA: the app image, under the name the app downloads
     print(env, v, "ok")
 
 for env in ESP32S3:
-    v = check_version(env, one(env, f"firmware-{env}-{BASE}.{B}.bin"))
+    app = one(env, f"firmware-{env}-{BASE}.{B}.bin")
+    v = check_version(env, app)
     copy(one(env, f"firmware-{env}-{BASE}.{B}.factory.bin"), f"firmware-{env}-{v}.factory.bin")
+    copy(app, f"firmware-{env}-{BASE}.{B}.bin")   # OTA app image
     print(env, v, "ok")
 
 for env in NRF52:
     v = check_version(env, one(env, f"firmware-{env}-{BASE}.{B}.elf"))   # .hex stores bytes as text, so check the .elf
     for ext in ("uf2", "zip"):
         copy(one(env, f"firmware-{env}-{BASE}.{B}.{ext}"), f"firmware-{env}-{v}.{ext}")
+    # OTA / USB update from the app: upstream names, no board suffix (the app builds them from the env and version)
+    copy(one(env, f"firmware-{env}-{BASE}.{B}.zip"), f"firmware-{env}-{BASE}.{B}-ota.zip")
+    copy(one(env, f"firmware-{env}-{BASE}.{B}.uf2"), f"firmware-{env}-{BASE}.{B}.uf2")
     print(env, v, "ok")
 
 with open(os.path.join(out, "SHA256SUMS.txt"), "w", newline="\n") as f:
