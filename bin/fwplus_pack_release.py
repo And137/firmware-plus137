@@ -34,9 +34,11 @@ def one(env, pattern):
 
 
 def check_version(env, path):
+    # Skips the ESP-IDF app descriptor ("v2.8.3.1373", from git describe when HEAD carries the release tag): only the
+    # firmware's own version string, which ends in the board suffix, is checked.
     data = open(path, "rb").read()
     want = f"{BASE}.{B}{SUF[env]}"
-    found = set(m.group().decode() for m in re.finditer(re.escape(BASE.encode()) + rb"\.137\d+[A-Za-z]{0,4}(?=\x00)", data))
+    found = set(m.group().decode() for m in re.finditer(rb"(?<![v\w.])" + re.escape(BASE.encode()) + rb"\.137\d+[A-Za-z]{0,4}(?=\x00)", data))
     assert found == {want}, (env, "expected", want, "found", found)
     return want
 
