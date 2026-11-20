@@ -32,6 +32,57 @@ int32_t OnDemandModule::runOnce()
     return default_broadcast_interval_secs;
 }
 
+// fw+ 1374: answer each (requester, request type) at most once per cooldown, so one client cannot load the mesh with
+// repeated statistics requests: 25 s, 55 s for the multi-packet lists (a little under the app cooldowns of 30 / 60 s, so
+// mesh delays never drop an allowed repeat). Requests from our own phone are not limited.
+// Static table, least recently answered entry replaced: no heap use.
+namespace
+{
+constexpr uint8_t ON_DEMAND_LIMIT_ENTRIES = 16;
+constexpr uint32_t ON_DEMAND_COOLDOWN_MS = 25 * 1000;
+constexpr uint32_t ON_DEMAND_LIST_COOLDOWN_MS = 55 * 1000;
+
+struct OnDemandAnswered {
+    NodeNum from;
+    uint16_t type;
+    uint32_t atMs;
+};
+OnDemandAnswered onDemandAnswered[ON_DEMAND_LIMIT_ENTRIES] = {};
+
+uint32_t onDemandCooldownMs(uint32_t type)
+{
+    switch (type) {
+    case meshtastic_OnDemandType_REQUEST_NODES_DIRECT_ONLINE:
+    case meshtastic_OnDemandType_REQUEST_ROUTING_TABLE:
+    case meshtastic_OnDemandType_REQUEST_PACKET_EXCHANGE_HISTORY:
+        return ON_DEMAND_LIST_COOLDOWN_MS;
+    default:
+        return ON_DEMAND_COOLDOWN_MS;
+    }
+}
+
+/** True when [from] got an answer to [type] within its cooldown; otherwise records this answer and returns false. */
+bool onDemandRateLimited(NodeNum from, uint32_t type)
+{
+    const uint32_t now = millis();
+    OnDemandAnswered *slot = &onDemandAnswered[0];
+    for (auto &entry : onDemandAnswered) {
+        if (entry.from == from && entry.type == type) {
+            if (now - entry.atMs < onDemandCooldownMs(type)) {
+                return true;
+            }
+            slot = &entry;
+            break;
+        }
+        if (entry.from == 0 || (slot->from != 0 && now - entry.atMs > now - slot->atMs)) {
+            slot = &entry; // free slot, else the oldest answer
+        }
+    }
+    *slot = {from, (uint16_t)type, now};
+    return false;
+}
+} // namespace
+
 bool OnDemandModule::handleReceivedProtobuf(const meshtastic_MeshPacket &mp, meshtastic_OnDemand *t)
 {
     if (t->which_variant == meshtastic_OnDemand_request_tag) 
@@ -39,6 +90,11 @@ bool OnDemandModule::handleReceivedProtobuf(const meshtastic_MeshPacket &mp, mes
         //only answer if request is for us or originated locally (phone)
         if (mp.from != RX_SRC_LOCAL && mp.to != nodeDB->getNodeNum()) {
             return false; // not our request; let it route
+        }
+        if (mp.from != RX_SRC_LOCAL && mp.from != nodeDB->getNodeNum() &&
+            onDemandRateLimited(mp.from, t->variant.request.request_type)) {
+            LOG_DEBUG("OnDemand: request %u from 0x%08x within cooldown, not answered", t->variant.request.request_type, mp.from);
+            return true; // handled: no answer
         }
         
         switch(t->variant.request.request_type) 

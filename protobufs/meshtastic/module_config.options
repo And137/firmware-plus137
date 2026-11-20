@@ -58,3 +58,4 @@
 *BroadcastAssistConfig.max_extra_hops int_size:8
 *BroadcastAssistConfig.jitter_ms int_size:16
 *BroadcastAssistConfig.allowed_ports max_count:8
+*NodeModAdminConfig.zero_hop_max_chutil int_size:8

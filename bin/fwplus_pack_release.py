@@ -5,9 +5,10 @@ Used by .github/workflows/fwplus_release.yml and for local releases. The base ve
 version.properties.
 
 - Checks the version string baked into every image (2.8.3.<fw+ version><board suffix>); stops on a mismatch.
-- Hydra: writes -ota (full factory.bin with the MeshtasticOTA loader in ota_1 @ 0x260000) and -noota (factory.bin cut
-  at the end of the app; checks that only 0xFF lies between the app and 0x260000).
-- Other ESP32-S3 boards: factory.bin. nRF52: .uf2 and .zip.
+- ESP32 (Hydra and, from 1374, the ESP32-S3 boards): writes -ota (full factory.bin with the MeshtasticOTA loader in
+  ota_1) and -noota (factory.bin cut at the end of the app; checks that only 0xFF lies between the app and ota_1).
+  The ota_1 offset comes from the env's partition table (Hydra 0x260000, 8 MB boards 0x340000, 16 MB 0x650000).
+- nRF52: .uf2 and .zip.
 - File names carry the board suffix (PROGNAME does not), then SHA256SUMS.txt.
 - For updates from the Mesh+ 137 app, also the upstream-named files without the suffix: ESP32 app image
   firmware-<env>-<version>.bin, nRF52 firmware-<env>-<version>-ota.zip (BLE DFU) and .uf2 (USB).
@@ -21,11 +22,15 @@ _props.read(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "vers
 BASE = "{major}.{minor}.{build}".format(**{k: v.strip() for k, v in _props["VERSION"].items()})
 SUF = {"hydra": "Hy", "hydra_psram": "HyR", "hydraE22P": "HyP", "hydraE22P_psram": "HyPR",
        "seeed-xiao-s3": "Xs", "heltec-wsl-v3": "HeW", "heltec-v3": "He3", "heltec-v4": "He4",
-       "nrf52_promicro_diy_tcxo": "nF", "seeed_xiao_nrf52840_kit": "Xn"}
+       "nrf52_promicro_diy_tcxo": "nF", "seeed_xiao_nrf52840_kit": "Xn", "rak4631": "Rak"}
 HYDRA = ["hydra", "hydra_psram", "hydraE22P", "hydraE22P_psram"]
 ESP32S3 = ["seeed-xiao-s3", "heltec-wsl-v3", "heltec-v3", "heltec-v4"]
-NRF52 = ["nrf52_promicro_diy_tcxo", "seeed_xiao_nrf52840_kit"]
-OTA_1 = 0x260000
+NRF52 = ["nrf52_promicro_diy_tcxo", "seeed_xiao_nrf52840_kit", "rak4631"]
+# Partition table of each ESP32 env (board_build.partitions); ota_1 holds the MeshtasticOTA loader.
+PARTITIONS = {**{e: "partition-table.csv" for e in HYDRA},
+              "seeed-xiao-s3": "default_8MB.csv", "heltec-wsl-v3": "default_8MB.csv", "heltec-v3": "default_8MB.csv",
+              "heltec-v4": "default_16MB.csv"}
+ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 os.makedirs(out, exist_ok=True)
 
 
@@ -45,28 +50,30 @@ def check_version(env, path):
     return want
 
 
+def ota1_offset(env):
+    for line in open(os.path.join(ROOT, PARTITIONS[env])):
+        cols = [c.strip() for c in line.split("#")[0].split(",")]
+        if len(cols) >= 4 and cols[1] == "app" and cols[2] == "ota_1":
+            return int(cols[3], 0)
+    raise AssertionError(env + ": no ota_1 partition in " + PARTITIONS[env])
+
+
 def copy(src, dst):
     open(os.path.join(out, dst), "wb").write(open(src, "rb").read())
 
 
-for env in HYDRA:
+for env in HYDRA + ESP32S3:
     app = one(env, f"firmware-{env}-{BASE}.{B}.bin")
     v = check_version(env, app)
     fac = open(one(env, f"firmware-{env}-{BASE}.{B}.factory.bin"), "rb").read()
+    ota1 = ota1_offset(env)
     end = 0x10000 + os.path.getsize(app)
-    gap = fac[end:OTA_1]
+    gap = fac[end:ota1]
     assert gap == b"\xff" * len(gap), env + ": non-0xFF data between app end and ota_1"
-    assert fac[OTA_1:OTA_1 + 4] != b"\xff\xff\xff\xff", env + ": no OTA loader at 0x260000"
+    assert fac[ota1:ota1 + 4] != b"\xff\xff\xff\xff", f"{env}: no OTA loader at {ota1:#x}"
     open(os.path.join(out, f"firmware-{env}-{v}-ota.factory.bin"), "wb").write(fac)
     open(os.path.join(out, f"firmware-{env}-{v}-noota.factory.bin"), "wb").write(fac[:end])
     copy(app, f"firmware-{env}-{BASE}.{B}.bin")   # OTA: the app image, under the name the app downloads
-    print(env, v, "ok")
-
-for env in ESP32S3:
-    app = one(env, f"firmware-{env}-{BASE}.{B}.bin")
-    v = check_version(env, app)
-    copy(one(env, f"firmware-{env}-{BASE}.{B}.factory.bin"), f"firmware-{env}-{v}.factory.bin")
-    copy(app, f"firmware-{env}-{BASE}.{B}.bin")   # OTA app image
     print(env, v, "ok")
 
 for env in NRF52:

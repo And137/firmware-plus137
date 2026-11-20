@@ -1476,6 +1476,14 @@ message ModuleConfig {
     // fw+ Force disable HTTPS web server regardless of automation. Default false (HTTPS enabled).
     // When true, firmware must not start HTTPS even if PSRAM is available.
     bool force_disable_https = 45; // fw+
+
+    // fw+ 1374 zero-hop between routers: a router relaying a packet from another router keeps hop_limit
+    // (no favorites needed). Off by default.
+    bool zero_hop_routers = 46; // fw+
+    // Hops are kept only while channel utilization is below this percentage; 0 = default (25).
+    uint32 zero_hop_max_chutil = 47; // fw+
+    // Only when the previous relay is heard directly (hops_away 0).
+    bool zero_hop_direct_only = 48; // fw+
   }
 
   // fw+ Broadcast Assist configuration for controlled reflooding of broadcasts

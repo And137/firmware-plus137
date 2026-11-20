@@ -366,6 +366,7 @@ BOARD_VERSION_SUFFIX = {
     "heltec-wsl-v3": "HeW",
     "heltec-v3": "He3",
     "heltec-v4": "He4",
+    "rak4631": "Rak",
 }
 
 

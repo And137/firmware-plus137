@@ -1,7 +1,7 @@
 # firmware+ for Meshtastic routers (Meshtastic develop 2.8.3)
 
 Fork of the Meshtastic firmware `develop` branch for router nodes.
-Build environments: `hydra`, `hydra_psram` (standard E22, ESP32-WROVER with PSRAM), `hydraE22P` (no PSRAM), `hydraE22P_psram` (Freenove ESP32-WROVER, up to 1000 nodes), `nrf52_promicro_diy_tcxo` (nRF52840 Pro-micro DIY), `seeed_xiao_nrf52840_kit`, `seeed-xiao-s3` and `heltec-wsl-v3`.
+Build environments: `hydra`, `hydra_psram` (standard E22, ESP32-WROVER with PSRAM), `hydraE22P` (no PSRAM), `hydraE22P_psram` (Freenove ESP32-WROVER, up to 1000 nodes), `nrf52_promicro_diy_tcxo` (nRF52840 Pro-micro DIY), `seeed_xiao_nrf52840_kit`, `seeed-xiao-s3`, `heltec-wsl-v3`, `heltec-v3`, `heltec-v4` and `rak4631`.
 
 Main additions over upstream: node statistics on demand (OnDemand), telemetry and position limiters,
 opportunistic flooding, NodeMod / SignalReply, Wi-Fi and Bluetooth TX power settings, and extra
@@ -9,6 +9,13 @@ diagnostics (channel utilization, flash and heap counters, relay and duplicate c
 Based on upstream `develop` from 2026-11-02.
 
 ## Change log
+
+### Build 1374 (2026-11-20)
+- Zero-hop between routers: new NodeModAdmin fields `zero_hop_routers` (46, off by default), `zero_hop_max_chutil` (47, percent, 0 = 25) and `zero_hop_direct_only` (48). When on, `Router::shouldDecrementHopLimit()` keeps the hop limit for a packet relayed by any router-role node (ROUTER, ROUTER_LATE, CLIENT_BASE) that the relay byte resolves to unambiguously, without the favorites list, as long as channel utilization is below the threshold; with `zero_hop_direct_only` only for relays heard directly. The first hop always decrements, as before. Set from the Mesh+ 137 app (FW+ Configuration → Zero-hop between routers).
+- OnDemand rate limit: each requester gets at most one answer per request type every 25 s (55 s for `REQUEST_NODES_DIRECT_ONLINE`, `REQUEST_ROUTING_TABLE` and `REQUEST_PACKET_EXCHANGE_HISTORY`); repeats are dropped without an answer. Requests from the node's own phone are not limited. Static 16-entry table, no heap use.
+- ESP32-S3 boards (`heltec-v3`, `heltec-v4`, `heltec-wsl-v3`, `seeed-xiao-s3`) bundle the Meshtastic OTA loader in `ota_1`; releases carry `-ota` / `-noota` factory images as for Hydra (the pack script reads the `ota_1` offset from the partition table).
+- Polish characters on the OLED (`OLED_PL=1`) for Heltec V3, Heltec V4 and RAK4631.
+- New build: `rak4631` (RAK WisBlock 4631, suffix `Rak`).
 
 ### Build 1373 (2026-11-18)
 - New builds: `heltec-v3` (Heltec WiFi LoRa 32 V3, `He3`) and `heltec-v4` (Heltec WiFi LoRa 32 V4, `He4`), added to the 1373 release afterwards (built from the tagged commit).

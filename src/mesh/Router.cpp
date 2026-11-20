@@ -275,6 +275,40 @@ Router::Router() : concurrency::OSThread("Router"), fromRadioQueue(MAX_RX_FROMRA
     routingAuthCache.policy = meshtastic_Config_SecurityConfig_PacketSignaturePolicy_PACKET_SIGNATURE_POLICY_BALANCED;
 }
 
+// fw+ 1374 zero-hop between routers (NodeModAdmin zero_hop_*): keep hop_limit when the previous relay resolves
+// unambiguously to a router-role node, no favorite needed. Braked by channel utilization so a busy mesh falls back to
+// normal hop use; optionally only for a relay heard directly.
+static constexpr uint32_t ZERO_HOP_DEFAULT_MAX_CHUTIL = 25;
+
+static bool zeroHopFromRouterRelay(const meshtastic_MeshPacket *p)
+{
+    const auto &admin = moduleConfig.node_mod_admin;
+    if (!admin.zero_hop_routers) {
+        return false;
+    }
+    const uint32_t maxChUtil = admin.zero_hop_max_chutil ? admin.zero_hop_max_chutil : ZERO_HOP_DEFAULT_MAX_CHUTIL;
+    const float chUtil = airTime ? airTime->channelUtilizationPercent() : 0.0f;
+    if (chUtil >= (float)maxChUtil) {
+        LOG_DEBUG("Zero-hop skipped: ChUtil %.1f%% >= %u%%", chUtil, maxChUtil);
+        return false;
+    }
+    NodeNum resolved = 0;
+    if (!nodeDB->resolveUniqueLastByte(p->relay_node, /*requireDirectNeighbor=*/admin.zero_hop_direct_only, &resolved)) {
+        return false;
+    }
+    const meshtastic_NodeInfoLite *node = nodeDB->getMeshNode(resolved);
+    if (!node || !nodeInfoLiteHasUser(node) ||
+        !IS_ONE_OF(node->role, meshtastic_Config_DeviceConfig_Role_ROUTER, meshtastic_Config_DeviceConfig_Role_ROUTER_LATE,
+                   meshtastic_Config_DeviceConfig_Role_CLIENT_BASE)) {
+        return false;
+    }
+    if (admin.zero_hop_direct_only && !(node->has_hops_away && node->hops_away == 0)) {
+        return false;
+    }
+    LOG_DEBUG("Zero-hop: router relay 0x%08x, ChUtil %.1f%% < %u%%", resolved, chUtil, maxChUtil);
+    return true;
+}
+
 bool Router::shouldDecrementHopLimit(const meshtastic_MeshPacket *p)
 {
     // First hop MUST always decrement to prevent retry issues
@@ -314,6 +348,11 @@ bool Router::shouldDecrementHopLimit(const meshtastic_MeshPacket *p)
             LOG_DEBUG("Unique favorite relay router 0x%08x from last byte 0x%x", resolved, p->relay_node);
             return false; // Don't decrement hop_limit
         }
+    }
+
+    // fw+ 1374: any unambiguous router relay, when zero-hop between routers is enabled
+    if (zeroHopFromRouterRelay(p)) {
+        return false;
     }
 
     // No unambiguous favorite router match found, decrement hop_limit

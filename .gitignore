@@ -77,3 +77,9 @@ build/wasm/
 build/wasm-obj/
 build/wasm-*.log
 .emsdk/
+
+# AI assistant helper files: kept locally, not published
+AGENTS.md
+CLAUDE.md
+.github/copilot-instructions.md
+.claude/

@@ -616,6 +616,13 @@ typedef struct _meshtastic_ModuleConfig_NodeModAdminConfig {
     /* fw+ Force disable HTTPS web server regardless of automation. Default false (HTTPS enabled).
  When true, firmware must not start HTTPS even if PSRAM is available. */
     bool force_disable_https; /* fw+ */
+    /* fw+ 1374 zero-hop between routers: a router relaying a packet from another router keeps hop_limit
+ (no favorites needed). Off by default. */
+    bool zero_hop_routers; /* fw+ */
+    /* Hops are kept only while channel utilization is below this percentage; 0 = default (25). */
+    uint8_t zero_hop_max_chutil; /* fw+ */
+    /* Only when the previous relay is heard directly (hops_away 0). */
+    bool zero_hop_direct_only; /* fw+ */
 } meshtastic_ModuleConfig_NodeModAdminConfig;
 
 /* fw+ Broadcast Assist configuration for controlled reflooding of broadcasts */
@@ -809,7 +816,7 @@ extern "C" {
 #define meshtastic_ModuleConfig_MeshBeaconConfig_init_default {0, false, 0, "", false, meshtastic_ChannelSettings_init_default, _meshtastic_Config_LoRaConfig_RegionCode_MIN, false, _meshtastic_Config_LoRaConfig_ModemPreset_MIN, 0, 0, {meshtastic_ModuleConfig_MeshBeaconConfig_BroadcastTarget_init_default, meshtastic_ModuleConfig_MeshBeaconConfig_BroadcastTarget_init_default, meshtastic_ModuleConfig_MeshBeaconConfig_BroadcastTarget_init_default, meshtastic_ModuleConfig_MeshBeaconConfig_BroadcastTarget_init_default}}
 #define meshtastic_ModuleConfig_MeshBeaconConfig_BroadcastTarget_init_default {false, _meshtastic_Config_LoRaConfig_ModemPreset_MIN, _meshtastic_Config_LoRaConfig_RegionCode_MIN, false, 0, false, 0}
 #define meshtastic_ModuleConfig_NodeModConfig_init_default {"", ""}
-#define meshtastic_ModuleConfig_NodeModAdminConfig_init_default {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+#define meshtastic_ModuleConfig_NodeModAdminConfig_init_default {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 #define meshtastic_ModuleConfig_BroadcastAssistConfig_init_default {0, 0, 0, 0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}}
 #define meshtastic_ModuleConfig_TAKConfig_init_default {_meshtastic_Team_MIN, _meshtastic_MemberRole_MIN}
 #define meshtastic_RemoteHardwarePin_init_default {0, "", _meshtastic_RemoteHardwarePinType_MIN}
@@ -833,7 +840,7 @@ extern "C" {
 #define meshtastic_ModuleConfig_MeshBeaconConfig_init_zero {0, false, 0, "", false, meshtastic_ChannelSettings_init_zero, _meshtastic_Config_LoRaConfig_RegionCode_MIN, false, _meshtastic_Config_LoRaConfig_ModemPreset_MIN, 0, 0, {meshtastic_ModuleConfig_MeshBeaconConfig_BroadcastTarget_init_zero, meshtastic_ModuleConfig_MeshBeaconConfig_BroadcastTarget_init_zero, meshtastic_ModuleConfig_MeshBeaconConfig_BroadcastTarget_init_zero, meshtastic_ModuleConfig_MeshBeaconConfig_BroadcastTarget_init_zero}}
 #define meshtastic_ModuleConfig_MeshBeaconConfig_BroadcastTarget_init_zero {false, _meshtastic_Config_LoRaConfig_ModemPreset_MIN, _meshtastic_Config_LoRaConfig_RegionCode_MIN, false, 0, false, 0}
 #define meshtastic_ModuleConfig_NodeModConfig_init_zero {"", ""}
-#define meshtastic_ModuleConfig_NodeModAdminConfig_init_zero {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+#define meshtastic_ModuleConfig_NodeModAdminConfig_init_zero {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 #define meshtastic_ModuleConfig_BroadcastAssistConfig_init_zero {0, 0, 0, 0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}}
 #define meshtastic_ModuleConfig_TAKConfig_init_zero {_meshtastic_Team_MIN, _meshtastic_MemberRole_MIN}
 #define meshtastic_RemoteHardwarePin_init_zero   {0, "", _meshtastic_RemoteHardwarePinType_MIN}
@@ -1004,6 +1011,9 @@ extern "C" {
 #define meshtastic_ModuleConfig_NodeModAdminConfig_min_confidence_to_use_tag 43
 #define meshtastic_ModuleConfig_NodeModAdminConfig_hysteresis_cost_threshold_tenths_tag 44
 #define meshtastic_ModuleConfig_NodeModAdminConfig_force_disable_https_tag 45
+#define meshtastic_ModuleConfig_NodeModAdminConfig_zero_hop_routers_tag 46
+#define meshtastic_ModuleConfig_NodeModAdminConfig_zero_hop_max_chutil_tag 47
+#define meshtastic_ModuleConfig_NodeModAdminConfig_zero_hop_direct_only_tag 48
 #define meshtastic_ModuleConfig_BroadcastAssistConfig_enabled_tag 1
 #define meshtastic_ModuleConfig_BroadcastAssistConfig_degree_threshold_tag 2
 #define meshtastic_ModuleConfig_BroadcastAssistConfig_dup_threshold_tag 3
@@ -1334,7 +1344,10 @@ X(a, STATIC,   SINGULAR, UINT32,   route_ttl_per_conf_hours,  41) \
 X(a, STATIC,   SINGULAR, UINT32,   route_ttl_max_hours,  42) \
 X(a, STATIC,   SINGULAR, UINT32,   min_confidence_to_use,  43) \
 X(a, STATIC,   SINGULAR, UINT32,   hysteresis_cost_threshold_tenths,  44) \
-X(a, STATIC,   SINGULAR, BOOL,     force_disable_https,  45)
+X(a, STATIC,   SINGULAR, BOOL,     force_disable_https,  45) \
+X(a, STATIC,   SINGULAR, BOOL,     zero_hop_routers,  46) \
+X(a, STATIC,   SINGULAR, UINT32,   zero_hop_max_chutil,  47) \
+X(a, STATIC,   SINGULAR, BOOL,     zero_hop_direct_only,  48)
 #define meshtastic_ModuleConfig_NodeModAdminConfig_CALLBACK NULL
 #define meshtastic_ModuleConfig_NodeModAdminConfig_DEFAULT NULL
 
@@ -1427,7 +1440,7 @@ extern const pb_msgdesc_t meshtastic_RemoteHardwarePin_msg;
 #define meshtastic_ModuleConfig_MeshBeaconConfig_BroadcastTarget_size 16
 #define meshtastic_ModuleConfig_MeshBeaconConfig_size 232
 #define meshtastic_ModuleConfig_NeighborInfoConfig_size 10
-#define meshtastic_ModuleConfig_NodeModAdminConfig_size 269
+#define meshtastic_ModuleConfig_NodeModAdminConfig_size 279
 #define meshtastic_ModuleConfig_NodeModConfig_size 207
 #define meshtastic_ModuleConfig_PaxcounterConfig_size 30
 #define meshtastic_ModuleConfig_RangeTestConfig_size 12
@@ -1438,7 +1451,7 @@ extern const pb_msgdesc_t meshtastic_RemoteHardwarePin_msg;
 #define meshtastic_ModuleConfig_TAKConfig_size   4
 #define meshtastic_ModuleConfig_TelemetryConfig_size 50
 #define meshtastic_ModuleConfig_TrafficManagementConfig_size 30
-#define meshtastic_ModuleConfig_size             273
+#define meshtastic_ModuleConfig_size             283
 #define meshtastic_RemoteHardwarePin_size        21
 
 #ifdef __cplusplus

@@ -61,7 +61,7 @@ jobs:
       fail-fast: false
       matrix:
         # Keep in sync with HYDRA / ESP32S3 / NRF52 in bin/fwplus_pack_release.py.
-        env: ${{ fromJSON(inputs.envs || '["hydra", "hydra_psram", "hydraE22P", "hydraE22P_psram", "nrf52_promicro_diy_tcxo", "seeed_xiao_nrf52840_kit", "seeed-xiao-s3", "heltec-wsl-v3", "heltec-v3", "heltec-v4"]') }}
+        env: ${{ fromJSON(inputs.envs || '["hydra", "hydra_psram", "hydraE22P", "hydraE22P_psram", "nrf52_promicro_diy_tcxo", "seeed_xiao_nrf52840_kit", "seeed-xiao-s3", "heltec-wsl-v3", "heltec-v3", "heltec-v4", "rak4631"]') }}
     steps:
       - uses: actions/checkout@v7
         with:

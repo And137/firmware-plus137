@@ -23,6 +23,7 @@ Build environments:
 | `heltec-wsl-v3` | Heltec Wireless Stick Lite V3 (ESP32-S3, SX1262, 8 MB flash) | - | `HeW` |
 | `heltec-v3` | Heltec WiFi LoRa 32 V3 (ESP32-S3, SX1262, OLED), from build 1373 | - | `He3` |
 | `heltec-v4` | Heltec WiFi LoRa 32 V4 (ESP32-S3, SX1262, OLED), from build 1373 | - | `He4` |
+| `rak4631` | RAK WisBlock 4631 (nRF52840, SX1262, optional RAK1921 OLED), from build 1374 | - | `Rak` |
 
 Tested on hardware: the Hydra variants. The nRF52 Pro-micro build was checked on the bench (boots, Bluetooth,
 configuration) without a radio module. The Xiao and Heltec builds are not tested yet.
@@ -55,13 +56,17 @@ Based on upstream `develop` from 2026-11-02.
 and is shared by every environment; the firmware-plus137 numbering restarted at 1 (builds up to 40 used
 `2.8.3.<build><suffix>`). The same `137<build>` number is the FW+ version reported over OnDemand. The suffix
 marks the board (see the table above): Hydra `Hy`, plus `P` for the E22P module and `R` for PSRAM; `nF` =
-Pro-micro, `Xn` = Xiao nRF52840, `Xs` = Xiao ESP32-S3. In build 1371 only the Hydra PSRAM / E22P builds had a
+Pro-micro, `Xn` = Xiao nRF52840, `Xs` = Xiao ESP32-S3, `HeW` / `He3` / `He4` = Heltec WSL V3 / V3 / V4, `Rak` =
+RAK4631. In build 1371 only the Hydra PSRAM / E22P builds had a
 suffix (`R`, `P`, `PR`).
 
 ## Flashing
 
-- **Hydra, Xiao ESP32-S3 and Heltec WSL V3:** flash `firmware-<env>-<version>.factory.bin` at offset `0x0` with esptool.
-- **nRF52 (Pro-micro, Xiao nRF52840):** double-tap reset to open the UF2 bootloader drive, then copy
+- **ESP32 (Hydra, Xiao ESP32-S3, Heltec WSL V3 / V3 / V4):** flash `firmware-<env>-<version>-ota.factory.bin` at
+  offset `0x0` with esptool. The `-ota` image carries the Meshtastic OTA loader, so later updates can come over
+  Bluetooth or Wi-Fi from the app; `-noota` leaves it out (USB updates only). From build 1374 the ESP32-S3 boards get
+  both variants too (1373 and older: one `factory.bin` without the loader).
+- **nRF52 (Pro-micro, Xiao nRF52840, RAK4631):** double-tap reset to open the UF2 bootloader drive, then copy
   `firmware-<env>-<version>.uf2` onto it. The `.zip` is for DFU updates over USB or Bluetooth.
 
 ## Hydra configuration
@@ -91,6 +96,7 @@ Values marked `USERPREFS_*` are applied on the first boot after a clean flash or
 
 Full change log: [HYDRA.md](HYDRA.md).
 
+- **Build 1374 (2026-11-20):** zero-hop between routers (NodeModAdmin `zero_hop_routers`, off by default; a router relaying a router's packet keeps the hop limit while channel utilization is below `zero_hop_max_chutil`, default 25 %, optionally only for directly heard relays), OnDemand answers each requester and request type at most once per 25 s (55 s for multi-packet lists; our own phone is not limited), OTA loader for the ESP32-S3 boards (`-ota` / `-noota` images), Polish characters on the OLED (Heltec V3 / V4, RAK4631), new build for RAK4631 (`Rak`).
 - **Build 1373 (2026-11-18):** OnDemand node list limited to the 10 most recently heard nodes in one packet (direct neighbours list unchanged), release builds in GitHub Actions, new builds for Heltec V3 (`He3`) and Heltec V4 (`He4`).
 - **Build 1372 (2026-11-18):** new build for Heltec WSL V3 (`HeW`), board suffixes in the version (`Hy`, `HyR`, `HyP`, `HyPR`, `nF`, `Xn`, `Xs`), OnDemand noise floor history (10 averages of 20 samples, request type 26).
 - **Build 1371 (2026-11-17):** new numbering `2.8.3.137<build>`, compatibility with the new FW+ app (`wifi_power` / `bt_power` moved to fields 200/201, Broadcast Assist over admin), BLE kept up on routers, new builds for nRF52 Pro-micro, Xiao nRF52840 Kit and Xiao ESP32-S3; board suffixes (`Hy`, `nF`, `Xn`, `Xs`) start with build 1372.
