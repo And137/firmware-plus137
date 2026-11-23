@@ -1,7 +1,7 @@
-# firmware+ for Meshtastic routers (Meshtastic develop 2.8.3)
+# firmware+ for Meshtastic devices (Meshtastic develop 2.8.3)
 
-Fork of the Meshtastic firmware `develop` branch for router nodes.
-Build environments: `hydra`, `hydra_psram` (standard E22, ESP32-WROVER with PSRAM), `hydraE22P` (no PSRAM), `hydraE22P_psram` (Freenove ESP32-WROVER, up to 1000 nodes), `nrf52_promicro_diy_tcxo` (nRF52840 Pro-micro DIY), `seeed_xiao_nrf52840_kit`, `seeed-xiao-s3`, `heltec-wsl-v3`, `heltec-v3`, `heltec-v4` and `rak4631`.
+Fork of the Meshtastic firmware `develop` branch with the FW+ additions, for Meshtastic devices in any role.
+Build environments: `hydra`, `hydra_psram` (standard E22, ESP32-WROVER with PSRAM), `hydraE22P` (no PSRAM), `hydraE22P_psram` (Freenove ESP32-WROVER, up to 1000 nodes), `nrf52_promicro_diy_tcxo` (nRF52840 Pro-micro DIY), `seeed_xiao_nrf52840_kit`, `seeed-xiao-s3`, `heltec-wsl-v3`, `heltec-v3`, `heltec-v4`, `rak4631` and, from build 1375, `tbeam`, `tlora-v2-1-1_6`, `tbeam-s3-core`, `heltec-wireless-paper`, `station-g2`, `t-deck`, `t-echo`, `heltec-mesh-node-t114`, `heltec-mesh-node-t096`, `tracker-t1000-e`, `heltec-mesh-pocket-5000-inkhud`, `heltec-mesh-pocket-10000-inkhud`, `rak_killer_v2`, `rp2040-lora`, `picow` and `native` (Linux).
 
 Main additions over upstream: node statistics on demand (OnDemand), telemetry and position limiters,
 opportunistic flooding, NodeMod / SignalReply, Wi-Fi and Bluetooth TX power settings, and extra
@@ -9,6 +9,15 @@ diagnostics (channel utilization, flash and heap counters, relay and duplicate c
 Based on upstream `develop` from 2026-11-02.
 
 ## Change log
+
+### Build 1375 (2026-11-23)
+- ShortSlow is the default modem preset after a clean flash or factory reset (`USERPREFS_LORACONFIG_MODEM_PRESET` in `userPrefs.jsonc`).
+- Default MQTT server `loranet.pl`: root `msh/PL`, encryption on, TLS off, no login (`USERPREFS_MQTT_*`). MQTT itself stays off until enabled.
+- OnDemand "Nodes list (10 recent active)" really returns up to 10 nodes: one 190-byte packet held only 3-4 entries, so the list now continues in further packets (`packet_index` / `packet_total`).
+- Heltec V4 (`FWPLUS_LOW_BATT_WAKE`, patch by rpcwol): low-battery sleep at the third-lowest OCV point (~3.42 V, ~20 %) instead of the empty point, and a timer wake-up after Power -> Super deep sleep duration (`sds_secs`).
+- Heltec WSL V3: `HAS_HARDWARE_WATCHDOG` on GPIO35 (the LED), a 1 ms pulse every second plus one at the start of `setup()`, for an external watchdog. The LED heartbeat stopped while charging, so the watchdog reset the board; the LED no longer shows charging.
+- New builds: `tbeam` (`Tb`), `tlora-v2-1-1_6` (`TL16`), `tbeam-s3-core` (`TbS3`), `heltec-wireless-paper` (`HeWP`), `station-g2` (`SG2`), `t-deck` (`TD`) - all six with the OTA loader -, `t-echo` (`TE`), `heltec-mesh-node-t114` (`T114`), `heltec-mesh-node-t096` (`T96`), `tracker-t1000-e` (`T1k`), `heltec-mesh-pocket-5000-inkhud` (`MP5`), `heltec-mesh-pocket-10000-inkhud` (`MP10`), `rak_killer_v2` (`RK2`, new variant from musznik/firmware, PRIVATE_HW), `rp2040-lora` (`R24`), `picow` (`PiW`) and `native` (`Lx`, meshtasticd for Linux x86_64 / arm64, built in Debian 12).
+- Description: firmware+ for Meshtastic devices in any role, not only routers.
 
 ### Build 1374 (2026-11-20)
 - Zero-hop between routers: new NodeModAdmin fields `zero_hop_routers` (46, off by default), `zero_hop_max_chutil` (47, percent, 0 = 25) and `zero_hop_direct_only` (48). When on, `Router::shouldDecrementHopLimit()` keeps the hop limit for a packet relayed by any router-role node (ROUTER, ROUTER_LATE, CLIENT_BASE) that the relay byte resolves to unambiguously, without the favorites list, as long as channel utilization is below the threshold; with `zero_hop_direct_only` only for relays heard directly. The first hop always decrements, as before. Set from the Mesh+ 137 app (FW+ Configuration → Zero-hop between routers).

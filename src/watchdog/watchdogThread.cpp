@@ -18,7 +18,9 @@ void WatchdogThread::feedDog(void)
 
 int32_t WatchdogThread::runOnce()
 {
+#if HARDWARE_WATCHDOG_TIMEOUT_MS >= 10000 // fw+: no log line for the 1 s heartbeat feeds
     LOG_DEBUG("Feeding hardware watchdog");
+#endif
     feedDog();
     return HARDWARE_WATCHDOG_TIMEOUT_MS;
 }
@@ -26,7 +28,9 @@ int32_t WatchdogThread::runOnce()
 bool WatchdogThread::setup()
 {
     LOG_DEBUG("init hardware watchdog");
+#ifdef HARDWARE_WATCHDOG_WAKE // fw+: optional, the WSL V3 heartbeat has no wake line
     pinMode(HARDWARE_WATCHDOG_WAKE, INPUT);
+#endif
     pinMode(HARDWARE_WATCHDOG_DONE, OUTPUT);
     delay(1);
     digitalWrite(HARDWARE_WATCHDOG_DONE, LOW);

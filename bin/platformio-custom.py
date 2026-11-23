@@ -367,6 +367,23 @@ BOARD_VERSION_SUFFIX = {
     "heltec-v3": "He3",
     "heltec-v4": "He4",
     "rak4631": "Rak",
+    # fw+ 1375: more boards
+    "tbeam": "Tb",
+    "tbeam-s3-core": "TbS3",
+    "heltec-wireless-paper": "HeWP",
+    "tlora-v2-1-1_6": "TL16",
+    "station-g2": "SG2",
+    "t-deck": "TD",
+    "t-echo": "TE",
+    "heltec-mesh-node-t114": "T114",
+    "heltec-mesh-node-t096": "T96",
+    "tracker-t1000-e": "T1k",
+    "heltec-mesh-pocket-5000-inkhud": "MP5",
+    "heltec-mesh-pocket-10000-inkhud": "MP10",
+    "rp2040-lora": "R24",
+    "picow": "PiW",
+    "native": "Lx",
+    "rak_killer_v2": "RK2",
 }
 
 

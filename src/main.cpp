@@ -389,6 +389,14 @@ void setup()
     // initialize power HAL layer as early as possible
     powerHAL_init();
 
+#if defined(HAS_HARDWARE_WATCHDOG) && defined(HARDWARE_WATCHDOG_DONE)
+    // fw+ 1375: first pulse to an external watchdog right away; WatchdogThread only starts after the long setup()
+    pinMode(HARDWARE_WATCHDOG_DONE, OUTPUT);
+    digitalWrite(HARDWARE_WATCHDOG_DONE, HIGH);
+    delay(1);
+    digitalWrite(HARDWARE_WATCHDOG_DONE, LOW);
+#endif
+
 #ifdef LED_POWER
     pinMode(LED_POWER, OUTPUT);
     digitalWrite(LED_POWER, LED_STATE_ON);

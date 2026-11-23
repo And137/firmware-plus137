@@ -60,8 +60,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Keep in sync with HYDRA / ESP32S3 / NRF52 in bin/fwplus_pack_release.py.
-        env: ${{ fromJSON(inputs.envs || '["hydra", "hydra_psram", "hydraE22P", "hydraE22P_psram", "nrf52_promicro_diy_tcxo", "seeed_xiao_nrf52840_kit", "seeed-xiao-s3", "heltec-wsl-v3", "heltec-v3", "heltec-v4", "rak4631"]') }}
+        # Keep in sync with HYDRA / ESP32 / ESP32S3 / NRF52 / RP2040 in bin/fwplus_pack_release.py.
+        env: ${{ fromJSON(inputs.envs || '["hydra", "hydra_psram", "hydraE22P", "hydraE22P_psram", "tbeam", "tlora-v2-1-1_6", "seeed-xiao-s3", "heltec-wsl-v3", "heltec-v3", "heltec-v4", "tbeam-s3-core", "heltec-wireless-paper", "station-g2", "t-deck", "nrf52_promicro_diy_tcxo", "seeed_xiao_nrf52840_kit", "rak4631", "t-echo", "heltec-mesh-node-t114", "heltec-mesh-node-t096", "tracker-t1000-e", "heltec-mesh-pocket-5000-inkhud", "heltec-mesh-pocket-10000-inkhud", "rak_killer_v2", "rp2040-lora", "picow"]') }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -97,8 +97,60 @@ jobs:
           retention-days: 3
           if-no-files-found: error
 
+  # meshtasticd for Linux, built in Debian 12 (Bookworm, = Raspberry Pi OS Bookworm) so the binary runs there.
+  build-native:
+    needs: check-version
+    if: inputs.envs == '' || inputs.envs == null
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    container: debian:bookworm
+    timeout-minutes: 90
+    steps:
+      - name: Install build dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends git ca-certificates curl python3 python3-venv build-essential \
+            pkg-config libbluetooth-dev libsdbus-c++-dev libgpiod-dev libyaml-cpp-dev libjsoncpp-dev openssl libssl-dev \
+            libulfius-dev liborcania-dev libusb-1.0-0-dev libi2c-dev libuv1-dev libcurl4-gnutls-dev libnotify-dev \
+            libavahi-client-dev libbsd-dev
+
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TAG }}
+          submodules: recursive
+
+      - name: Trust the checkout
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v6
+        with:
+          path: ~/.platformio
+          key: pio-native-${{ matrix.arch }}-${{ hashFiles('platformio.ini', 'variants/native/**') }}
+          restore-keys: pio-native-${{ matrix.arch }}-
+
+      - name: Install PlatformIO
+        run: python3 -m venv /opt/pio && /opt/pio/bin/pip install -U platformio
+
+      - name: Build meshtasticd
+        run: /opt/pio/bin/pio run -e native || /opt/pio/bin/pio run -e native
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: native-${{ matrix.arch }}
+          path: .pio/build/native/meshtasticd
+          retention-days: 3
+          if-no-files-found: error
+
   release:
-    needs: [check-version, build]
+    needs: [check-version, build, build-native]
     if: inputs.envs == '' || inputs.envs == null
     runs-on: ubuntu-latest
     permissions:

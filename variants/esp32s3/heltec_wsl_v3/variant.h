@@ -1,7 +1,12 @@
 #define I2C_SCL SCL
 #define I2C_SDA SDA
 
-#define LED_POWER LED
+// fw+ 1375: an external watchdog at the installation site is fed from the LED pin (GPIO35). The LED heartbeat stops
+// while charging / charged (and when disabled in the config), so the watchdog reset the board. GPIO35 now gets a 1 ms
+// pulse every second from WatchdogThread instead, whatever the power state; the LED no longer shows charging.
+#define HAS_HARDWARE_WATCHDOG
+#define HARDWARE_WATCHDOG_DONE LED
+#define HARDWARE_WATCHDOG_TIMEOUT_MS 1000
 
 #define VEXT_ENABLE Vext // active low, powers the oled display and the lora antenna boost
 #define VEXT_ON_VALUE LOW

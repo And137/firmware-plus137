@@ -1311,9 +1311,16 @@ void Power::readPowerStatus()
 
     if (batteryLevel) {
         // getBattVoltage() reports pack voltage; the OCV table is per cell.
+#ifdef FWPLUS_LOW_BATT_WAKE
+        // fw+ 1375 (patch by rpcwol, Heltec V4): sleep at the third-lowest OCV point (~20 %, ~3.4 V) instead of the
+        // lowest, so the cell keeps enough charge to avoid a brown-out boot loop.
+        constexpr int lowBattOcvIndex = NUM_OCV_POINTS - 3;
+#else
+        constexpr int lowBattOcvIndex = NUM_OCV_POINTS - 1;
+#endif
         const bool shutdownNow =
             updateLowVoltageCounter(low_voltage_counter, powerStatus2.getHasBattery(), powerStatus2.getHasUSB(),
-                                    batteryLevel->getBattVoltage(), OCV[NUM_OCV_POINTS - 1] * NUM_CELLS);
+                                    batteryLevel->getBattVoltage(), OCV[lowBattOcvIndex] * NUM_CELLS);
         if (low_voltage_counter)
             LOG_DEBUG("Low voltage counter: %d/%d", low_voltage_counter, LOW_VOLTAGE_READINGS_BEFORE_SHUTDOWN);
         if (shutdownNow) {

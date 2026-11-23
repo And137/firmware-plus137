@@ -2,14 +2,14 @@
 
 <img src=".github/meshtastic_logo.png" alt="Meshtastic Logo" width="80"/>
 
-<h1>firmware+ for Meshtastic routers (Meshtastic develop 2.8.3)</h1>
+<h1>firmware+ for Meshtastic devices (Meshtastic develop 2.8.3)</h1>
 
 </div>
 
 ## Overview
 
-Fork of the Meshtastic firmware `develop` branch for router nodes (ROUTER / ROUTER_LATE).
-Build environments:
+Fork of the Meshtastic firmware `develop` branch with the FW+ additions, for Meshtastic devices in any role
+(client, router, base station). Build environments:
 
 | Environment | Board | Suffix in 1371 | Suffix from 1372 |
 | ----------- | ----- | -------------- | ---------------- |
@@ -24,9 +24,25 @@ Build environments:
 | `heltec-v3` | Heltec WiFi LoRa 32 V3 (ESP32-S3, SX1262, OLED), from build 1373 | - | `He3` |
 | `heltec-v4` | Heltec WiFi LoRa 32 V4 (ESP32-S3, SX1262, OLED), from build 1373 | - | `He4` |
 | `rak4631` | RAK WisBlock 4631 (nRF52840, SX1262, optional RAK1921 OLED), from build 1374 | - | `Rak` |
+| `tbeam` | LILYGO T-Beam (ESP32), from build 1375 | - | `Tb` |
+| `tlora-v2-1-1_6` | LILYGO T-LoRa V2.1-1.6 (ESP32), from build 1375 | - | `TL16` |
+| `tbeam-s3-core` | LILYGO T-Beam Supreme / S3 Core (ESP32-S3), from build 1375 | - | `TbS3` |
+| `heltec-wireless-paper` | Heltec Wireless Paper (ESP32-S3, e-paper), from build 1375 | - | `HeWP` |
+| `station-g2` | B&Q Station G2 (ESP32-S3), from build 1375 | - | `SG2` |
+| `t-deck` | LILYGO T-Deck (ESP32-S3, keyboard, TFT), from build 1375 | - | `TD` |
+| `t-echo` | LILYGO T-Echo (nRF52840, e-paper), from build 1375 | - | `TE` |
+| `heltec-mesh-node-t114` | Heltec Mesh Node T114 (nRF52840, TFT), from build 1375 | - | `T114` |
+| `heltec-mesh-node-t096` | Heltec Mesh Node T096 (nRF52840, TFT), from build 1375 | - | `T96` |
+| `tracker-t1000-e` | Seeed SenseCAP T1000-E tracker (nRF52840), from build 1375 | - | `T1k` |
+| `heltec-mesh-pocket-5000-inkhud` | Heltec MeshPocket 5000 mAh, InkHUD (nRF52840), from build 1375 | - | `MP5` |
+| `heltec-mesh-pocket-10000-inkhud` | Heltec MeshPocket 10000 mAh, InkHUD (nRF52840), from build 1375 | - | `MP10` |
+| `rak_killer_v2` | [RAK Killer v2](https://github.com/Uroboros67/rak_killer): SuperMini nRF52840 + HT-RA62 (hardware model `PRIVATE_HW`), from build 1375 | - | `RK2` |
+| `rp2040-lora` | RP2040-LoRa (RP2040), from build 1375 | - | `R24` |
+| `picow` | Raspberry Pi Pico W with a LoRa module (RP2040), from build 1375 | - | `PiW` |
+| `native` | Linux (`meshtasticd`, x86_64 and arm64, Debian 12 / Raspberry Pi OS Bookworm), from build 1375 | - | `Lx` |
 
-Tested on hardware: the Hydra variants. The nRF52 Pro-micro build was checked on the bench (boots, Bluetooth,
-configuration) without a radio module. The Xiao and Heltec builds are not tested yet.
+Tested on hardware: the Hydra variants, nRF52 Pro-micro with a radio module, Heltec V3, RAK4631 and Xiao nRF52840.
+The boards added in build 1375 are not tested yet.
 
 > [!NOTE]
 > **Version suffixes from build 1372.** Every build names its board at the end of the version: Hydra `Hy`
@@ -43,7 +59,8 @@ configuration) without a radio module. The Xiao and Heltec builds are not tested
 > The Pro-micro build does not limit TX power for an external PA: with the default settings the SX1262 transmits
 > at 22 dBm. With an E22-900M30S or M33S module, set a low `tx_power` in the app before setting the region.
 
-Main additions over upstream: node statistics on demand (OnDemand), telemetry and position limiters,
+Main additions over upstream: ShortSlow as the default LoRa preset (from build 1375), node statistics on demand
+(OnDemand), telemetry and position limiters,
 opportunistic flooding, NodeMod / SignalReply, Wi-Fi and Bluetooth TX power settings, and extra
 diagnostics (channel utilization, flash and heap counters, relay and duplicate counters).
 Wi-Fi / Bluetooth TX power settings and the NodeDB write fixes apply to Hydra only; the other boards have the
@@ -57,17 +74,22 @@ and is shared by every environment; the firmware-plus137 numbering restarted at 
 `2.8.3.<build><suffix>`). The same `137<build>` number is the FW+ version reported over OnDemand. The suffix
 marks the board (see the table above): Hydra `Hy`, plus `P` for the E22P module and `R` for PSRAM; `nF` =
 Pro-micro, `Xn` = Xiao nRF52840, `Xs` = Xiao ESP32-S3, `HeW` / `He3` / `He4` = Heltec WSL V3 / V3 / V4, `Rak` =
-RAK4631. In build 1371 only the Hydra PSRAM / E22P builds had a
+RAK4631; from build 1375 also the suffixes of the new boards in the table above. In build 1371 only the Hydra PSRAM / E22P builds had a
 suffix (`R`, `P`, `PR`).
 
 ## Flashing
 
-- **ESP32 (Hydra, Xiao ESP32-S3, Heltec WSL V3 / V3 / V4):** flash `firmware-<env>-<version>-ota.factory.bin` at
+- **ESP32 (Hydra, T-Beam, T-LoRa, Xiao ESP32-S3, Heltec WSL V3 / V3 / V4 / Wireless Paper, T-Beam S3, Station G2,
+  T-Deck):** flash `firmware-<env>-<version>-ota.factory.bin` at
   offset `0x0` with esptool. The `-ota` image carries the Meshtastic OTA loader, so later updates can come over
   Bluetooth or Wi-Fi from the app; `-noota` leaves it out (USB updates only). From build 1374 the ESP32-S3 boards get
   both variants too (1373 and older: one `factory.bin` without the loader).
-- **nRF52 (Pro-micro, Xiao nRF52840, RAK4631):** double-tap reset to open the UF2 bootloader drive, then copy
-  `firmware-<env>-<version>.uf2` onto it. The `.zip` is for DFU updates over USB or Bluetooth.
+- **nRF52 (Pro-micro, Xiao nRF52840, RAK4631, T-Echo, T114, T096, T1000-E, MeshPocket, RAK Killer v2):** double-tap
+  reset to open the UF2 bootloader drive, then copy `firmware-<env>-<version>.uf2` onto it. The `.zip` is for DFU
+  updates over USB or Bluetooth.
+- **RP2040 (RP2040-LoRa, Pico W):** hold BOOTSEL while plugging in USB, then copy `firmware-<env>-<version>.uf2`
+  onto the drive.
+- **Linux:** unpack `meshtasticd-<version>-linux-<arch>.tar.gz` and follow its `README.txt`.
 
 ## Hydra configuration
 
@@ -96,6 +118,16 @@ Values marked `USERPREFS_*` are applied on the first boot after a clean flash or
 
 Full change log: [HYDRA.md](HYDRA.md).
 
+- **Build 1375 (2026-11-23):** ShortSlow is the default modem preset after a clean flash or factory reset, and
+  the default MQTT server is `loranet.pl` (root `msh/PL`, encryption on, no login; MQTT stays off until enabled); new
+  builds for T-Beam, T-LoRa V2.1-1.6, T-Beam S3 Core, Heltec Wireless Paper, Station G2, T-Deck, T-Echo, T114, T096, T1000-E, MeshPocket 5000 / 10000 InkHUD, RAK Killer v2, RP2040-LoRa, Pico W and Linux (`meshtasticd`,
+  x86_64 / arm64); the new ESP32 boards carry the OTA loader (`-ota` / `-noota`). Heltec V4: low-battery sleep at
+  about 20 % (~3.4 V) instead of the empty point, and a timed wake-up after Power -> Super deep sleep duration, so the
+  node comes back once it is charged again (patch by rpcwol).
+  Heltec WSL V3: GPIO35 (the LED) gets a 1 ms pulse every second for an external watchdog, whatever the charge state
+  (the LED heartbeat stopped while charging, and the watchdog reset the board); the LED no longer shows charging.
+  OnDemand "Nodes list (10 recent active)" really returns up to 10 nodes (one packet held only 3-4; the list now
+  continues in 2-3 packets).
 - **Build 1374 (2026-11-20):** zero-hop between routers (NodeModAdmin `zero_hop_routers`, off by default; a router relaying a router's packet keeps the hop limit while channel utilization is below `zero_hop_max_chutil`, default 25 %, optionally only for directly heard relays), OnDemand answers each requester and request type at most once per 25 s (55 s for multi-packet lists; our own phone is not limited), OTA loader for the ESP32-S3 boards (`-ota` / `-noota` images), Polish characters on the OLED (Heltec V3 / V4, RAK4631), new build for RAK4631 (`Rak`).
 - **Build 1373 (2026-11-18):** OnDemand node list limited to the 10 most recently heard nodes in one packet (direct neighbours list unchanged), release builds in GitHub Actions, new builds for Heltec V3 (`He3`) and Heltec V4 (`He4`).
 - **Build 1372 (2026-11-18):** new build for Heltec WSL V3 (`HeW`), board suffixes in the version (`Hy`, `HyR`, `HyP`, `HyPR`, `nF`, `Xn`, `Xs`), OnDemand noise floor history (10 averages of 20 samples, request type 26).
@@ -119,4 +151,6 @@ Special thanks to:
 Also:
 
 - Upstream firmware: the [Meshtastic](https://meshtastic.org) project and its contributors.
-- Board designs: [NanoVHF/Meshtastic-DIY](https://github.com/NanoVHF/Meshtastic-DIY/tree/main).
+- rpcwol: Heltec V4 low-battery sleep and wake-up patch.
+- Board designs: [NanoVHF/Meshtastic-DIY](https://github.com/NanoVHF/Meshtastic-DIY/tree/main),
+  [Uroboros67/rak_killer](https://github.com/Uroboros67/rak_killer) (RAK Killer v2; variant from musznik/firmware).

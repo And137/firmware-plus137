@@ -20,6 +20,10 @@
 #include "sleep.h"
 #include "target_specific.h"
 
+#if defined(ARCH_ESP32) && defined(FWPLUS_LOW_BATT_WAKE)
+#include <esp_sleep.h>
+#endif
+
 #if HAS_WIFI && !defined(ARCH_PORTDUINO) || defined(MESHTASTIC_EXCLUDE_WIFI)
 #include "mesh/wifi/WiFiAPClient.h"
 #endif
@@ -99,6 +103,17 @@ static void sdsEnter()
 static void lowBattSDSEnter()
 {
     LOG_POWERFSM("State: Lower batt SDS");
+#if defined(ARCH_ESP32) && defined(FWPLUS_LOW_BATT_WAKE)
+    // fw+ 1375 (patch by rpcwol, Heltec V4): wake up after Power -> Super deep sleep duration (sds_secs) and check the
+    // battery again. The board does not sense USB power returning, so without a timer it would sleep until reset.
+    if (config.power.sds_secs > 0) {
+        const uint64_t sleepMicros = (uint64_t)config.power.sds_secs * 1000000ULL; // 64-bit: no overflow above ~71 min
+        LOG_INFO("Low battery: wake-up timer in %u s", config.power.sds_secs);
+        esp_sleep_enable_timer_wakeup(sleepMicros);
+    } else {
+        LOG_INFO("Low battery: sds_secs is 0, no extra wake-up timer");
+    }
+#endif
     doDeepSleep(Default::getConfiguredOrDefaultMs(config.power.sds_secs), false, true);
 }
 extern Power *power;

@@ -237,8 +237,8 @@ void OnDemandModule::fillNodeEntry(const meshtastic_NodeInfoLite *node, meshtast
 }
 
 // fw+ 1373: the full 2 h list went out as many packets on a large mesh for every request. Now the NUM_RECENT_NODES most
-// recently heard nodes (within the same 2 h window, never our own node), newest first, in a single packet
-// (packet_total = 1). Same request/response types, so older apps keep working.
+// recently heard nodes (within the same 2 h window, never our own node), newest first; from 1375 split over as many
+// packets as they need. Same request/response types, so older apps keep working.
 std::vector<std::unique_ptr<meshtastic_OnDemand>> OnDemandModule::createRecentNodeList()
 {
     // Keep the NUM_RECENT_NODES freshest nodes in a small array ordered by age (insertion), instead of collecting and
@@ -264,32 +264,45 @@ std::vector<std::unique_ptr<meshtastic_OnDemand>> OnDemandModule::createRecentNo
         recentIndex[pos] = i;
     }
 
-    std::unique_ptr<meshtastic_OnDemand> onDemand(new meshtastic_OnDemand);
-    *onDemand = meshtastic_OnDemand_init_zero;
-    onDemand->which_variant = meshtastic_OnDemand_response_tag;
-    onDemand->variant.response.response_type = meshtastic_OnDemandType_RESPONSE_NODES_ONLINE;
-    onDemand->variant.response.which_response_data = meshtastic_OnDemandResponse_node_list_tag;
-    onDemand->has_packet_index = true;
-    onDemand->packet_index = 1;
-    onDemand->has_packet_total = true;
-    onDemand->packet_total = 1;
+    // fw+ 1375: one 190-byte packet held only 3-4 entries (long name, position, SNR and RSSI per node), so the rest of
+    // the 10 was dropped. The entries now continue in further packets (packet_index / packet_total), still capped at
+    // NUM_RECENT_NODES: usually 2-3 packets instead of the old full 2 h list.
+    std::vector<std::unique_ptr<meshtastic_OnDemand>> packets;
+    auto newPacket = [&packets]() -> meshtastic_NodesList & {
+        std::unique_ptr<meshtastic_OnDemand> onDemand(new meshtastic_OnDemand);
+        *onDemand = meshtastic_OnDemand_init_zero;
+        onDemand->which_variant = meshtastic_OnDemand_response_tag;
+        onDemand->variant.response.response_type = meshtastic_OnDemandType_RESPONSE_NODES_ONLINE;
+        onDemand->variant.response.which_response_data = meshtastic_OnDemandResponse_node_list_tag;
+        onDemand->has_packet_index = true;
+        onDemand->packet_index = packets.size() + 1;
+        onDemand->has_packet_total = true;
+        packets.push_back(std::move(onDemand));
+        return packets.back()->variant.response.response_data.node_list;
+    };
 
-    meshtastic_NodesList &listRef = onDemand->variant.response.response_data.node_list;
-    listRef.node_list_count = 0;
-    const size_t cap = sizeof(listRef.node_list) / sizeof(listRef.node_list[0]);
-    for (size_t i = 0; i < keep && listRef.node_list_count < (pb_size_t)cap; i++) {
+    meshtastic_NodesList *listRef = &newPacket();
+    const size_t cap = sizeof(listRef->node_list) / sizeof(listRef->node_list[0]);
+    for (size_t i = 0; i < keep; i++) {
         meshtastic_NodeEntry entry = meshtastic_NodeEntry_init_zero;
         fillNodeEntry(nodeDB->getMeshNodeByIndex(recentIndex[i]), entry);
-        listRef.node_list[listRef.node_list_count++] = entry;
-        // long names and positions can overflow one packet before 10 entries: keep what fits
-        if (!fitsInPacket(*onDemand, MAX_PACKET_SIZE)) {
-            listRef.node_list_count--;
-            break;
+        if (listRef->node_list_count >= (pb_size_t)cap)
+            listRef = &newPacket();
+        listRef->node_list[listRef->node_list_count++] = entry;
+        if (!fitsInPacket(*packets.back(), MAX_PACKET_SIZE)) {
+            listRef->node_list_count--;
+            if (listRef->node_list_count == 0)
+                continue; // a single entry larger than a packet: skip it rather than loop
+            listRef = &newPacket();
+            listRef->node_list[listRef->node_list_count++] = entry;
+            if (!fitsInPacket(*packets.back(), MAX_PACKET_SIZE))
+                listRef->node_list_count--;
         }
     }
-
-    std::vector<std::unique_ptr<meshtastic_OnDemand>> packets;
-    packets.push_back(std::move(onDemand));
+    if (packets.size() > 1 && packets.back()->variant.response.response_data.node_list.node_list_count == 0)
+        packets.pop_back();
+    for (auto &pkt : packets)
+        pkt->packet_total = packets.size();
     return packets;
 }
 
