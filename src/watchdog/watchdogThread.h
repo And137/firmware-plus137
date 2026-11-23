@@ -1,6 +1,7 @@
 #pragma once
 
 #include "concurrency/OSThread.h"
+#include "configuration.h" // fw+ 1375: brings in variant.h (HAS_HARDWARE_WATCHDOG) on ESP32 too
 #include <stdint.h>
 
 #ifdef HAS_HARDWARE_WATCHDOG
