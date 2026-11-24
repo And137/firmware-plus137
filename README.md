@@ -123,7 +123,7 @@ Full change log: [HYDRA.md](HYDRA.md).
   builds for T-Beam, T-LoRa V2.1-1.6, T-Beam S3 Core, Heltec Wireless Paper, Station G2, T-Deck, T-Echo, T114, T096, T1000-E, MeshPocket 5000 / 10000 InkHUD, RAK Killer v2, RP2040-LoRa, Pico W and Linux (`meshtasticd`,
   x86_64 / arm64); the new ESP32 boards carry the OTA loader (`-ota` / `-noota`). Heltec V4: low-battery sleep at
   about 20 % (~3.4 V) instead of the empty point, and a timed wake-up after Power -> Super deep sleep duration, so the
-  node comes back once it is charged again (patch by rpcwol).
+  node comes back once it is charged again (patch by [rpc](https://github.com/rpce)).
   Heltec WSL V3: GPIO35 (the LED) gets a 1 ms pulse every second for an external watchdog, whatever the charge state
   (the LED heartbeat stopped while charging, and the watchdog reset the board); the LED no longer shows charging.
   OnDemand "Nodes list (10 recent active)" really returns up to 10 nodes (one packet held only 3-4; the list now
@@ -151,6 +151,6 @@ Special thanks to:
 Also:
 
 - Upstream firmware: the [Meshtastic](https://meshtastic.org) project and its contributors.
-- rpcwol: Heltec V4 low-battery sleep and wake-up patch.
+- [rpc](https://github.com/rpce): Heltec V4 low-battery sleep and wake-up patch.
 - Board designs: [NanoVHF/Meshtastic-DIY](https://github.com/NanoVHF/Meshtastic-DIY/tree/main),
   [Uroboros67/rak_killer](https://github.com/Uroboros67/rak_killer) (RAK Killer v2; variant from musznik/firmware).

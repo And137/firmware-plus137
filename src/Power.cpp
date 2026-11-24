@@ -1312,7 +1312,7 @@ void Power::readPowerStatus()
     if (batteryLevel) {
         // getBattVoltage() reports pack voltage; the OCV table is per cell.
 #ifdef FWPLUS_LOW_BATT_WAKE
-        // fw+ 1375 (patch by rpcwol, Heltec V4): sleep at the third-lowest OCV point (~20 %, ~3.4 V) instead of the
+        // fw+ 1375 (patch by rpc, github.com/rpce, Heltec V4): sleep at the third-lowest OCV point (~20 %, ~3.4 V) instead of the
         // lowest, so the cell keeps enough charge to avoid a brown-out boot loop.
         constexpr int lowBattOcvIndex = NUM_OCV_POINTS - 3;
 #else

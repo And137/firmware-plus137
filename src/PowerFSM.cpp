@@ -104,7 +104,7 @@ static void lowBattSDSEnter()
 {
     LOG_POWERFSM("State: Lower batt SDS");
 #if defined(ARCH_ESP32) && defined(FWPLUS_LOW_BATT_WAKE)
-    // fw+ 1375 (patch by rpcwol, Heltec V4): wake up after Power -> Super deep sleep duration (sds_secs) and check the
+    // fw+ 1375 (patch by rpc, github.com/rpce, Heltec V4): wake up after Power -> Super deep sleep duration (sds_secs) and check the
     // battery again. The board does not sense USB power returning, so without a timer it would sleep until reset.
     if (config.power.sds_secs > 0) {
         const uint64_t sleepMicros = (uint64_t)config.power.sds_secs * 1000000ULL; // 64-bit: no overflow above ~71 min
